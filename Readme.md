@@ -18,5 +18,5 @@ make
 ```
 
 The test array builder will create a folder called `arrays` in the current working directory of where it is run.
-In the arrays folder will be a sub folder with the tiledb version. This can be copied to the top level arrays directory
+In the arrays folder will be a sub folder with the tiledb version. This can be copied to the top level directory
 and it will be used by TileDB for unit testing.
