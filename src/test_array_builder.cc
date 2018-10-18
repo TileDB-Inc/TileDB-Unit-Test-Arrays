@@ -36,6 +36,8 @@
 
 using namespace tiledb;
 
+std::string encryption_key = "unittestunittestunittestunittest";
+
 // Array Types to build
 std::vector<tiledb_array_type_t> array_types = {TILEDB_DENSE, TILEDB_SPARSE};
 
@@ -102,6 +104,11 @@ std::vector<tiledb_filter_type_t> filters = {
     TILEDB_FILTER_POSITIVE_DELTA,
 };
 
+std::vector<tiledb_encryption_type_t> encryption_types = {
+    TILEDB_NO_ENCRYPTION,
+    TILEDB_AES_256_GCM
+};
+
 /**
  * Helper function to check of a given datatype can use the double delta filter
  * @param datatype
@@ -132,7 +139,7 @@ std::pair<std::unique_ptr<std::vector<uint64_t>>, std::shared_ptr<void>> addData
  * @param array_type
  * @param dimension_type
  */
-void createArray(Context ctx, std::string array_name, tiledb_array_type_t array_type, tiledb_datatype_t dimension_type) {
+void createArray(Context ctx, std::string array_name, tiledb_array_type_t array_type, tiledb_datatype_t dimension_type, tiledb_encryption_type_t encryption_type) {
   Domain domain(ctx);
 
   // Build two dimensions rows and columns with domains [1,4]
@@ -231,7 +238,10 @@ void createArray(Context ctx, std::string array_name, tiledb_array_type_t array_
   }
 
   // Create the (empty) array on disk.
-  Array::create(array_name, schema);
+  if (encryption_type == TILEDB_NO_ENCRYPTION)
+    Array::create(array_name, schema);
+  else
+    Array::create(array_name, schema, encryption_type, encryption_key.c_str(), encryption_key.size() * sizeof(char));
 }
 
 /**
@@ -241,10 +251,14 @@ void createArray(Context ctx, std::string array_name, tiledb_array_type_t array_
  * @param dimensionType
  * @return
  */
-Query::Status writeData(Context ctx, std::string array_name, tiledb_datatype_t dimensionType) {
+Query::Status writeData(Context ctx, std::string array_name, tiledb_datatype_t dimensionType, tiledb_encryption_type_t encryption_type) {
 
-  Array array(ctx, array_name, TILEDB_WRITE);
-  Query query(ctx, array, TILEDB_WRITE);
+  Array *array;
+  if (encryption_type == TILEDB_NO_ENCRYPTION)
+    array = new Array(ctx, array_name, TILEDB_WRITE);
+  else
+    array = new Array(ctx, array_name, TILEDB_WRITE, encryption_type, encryption_key.c_str(), encryption_key.size() * sizeof(char));
+  Query query(ctx, *array, TILEDB_WRITE);
   query.set_layout(TILEDB_UNORDERED);
 
 
@@ -339,7 +353,7 @@ Query::Status writeData(Context ctx, std::string array_name, tiledb_datatype_t d
   }
 
   // Set the buffer for each attribute
-  for(auto attribute : array.schema().attributes()) {
+  for(auto attribute : array->schema().attributes()) {
         auto buffer = addDataToQuery(&query, attribute.first, attribute.second.type(), attribute.second.variable_sized());
         buffers.push_back(std::move(buffer));
   }
@@ -347,6 +361,7 @@ Query::Status writeData(Context ctx, std::string array_name, tiledb_datatype_t d
 
   // Finalize the query since we are doing unordered writes
   query.finalize();
+  delete array;
   return status;
 }
 
@@ -503,23 +518,26 @@ int main() {
 
   // Build an array for each array type
   for (auto arraytype : array_types) {
-    std::vector<tiledb_datatype_t> dimension_datatypes = dimension_dense_datatypes;
-    if (arraytype == tiledb_array_type_t::TILEDB_SPARSE)
-      dimension_datatypes = dimension_sparse_datatypes;
+    for (auto encryption_type : encryption_types) {
+      std::vector<tiledb_datatype_t> dimension_datatypes = dimension_dense_datatypes;
+      if (arraytype == tiledb_array_type_t::TILEDB_SPARSE)
+        dimension_datatypes = dimension_sparse_datatypes;
 
-    // Build an array for each dimension type
-    for (auto datatype : dimension_datatypes) {
-      std::stringstream array_name;
-      array_name << array_base << "/" << ArraySchema::to_str(arraytype) << "_";
-      array_name << tiledbVersionStr << "_" + impl::type_to_str(datatype);
-      if (Object::object(ctx, array_name.str()).type() == Object::Type::Array) {
-        continue;
-      }
+      // Build an array for each dimension type
+      for (auto datatype : dimension_datatypes) {
+        std::stringstream array_name;
+        array_name << array_base << "/" << ArraySchema::to_str(arraytype) << "_";
+        array_name << tiledbVersionStr << "_" + impl::type_to_str(datatype);
+        array_name << ((encryption_type == tiledb_encryption_type_t::TILEDB_NO_ENCRYPTION) ? "" : "_encryption_AES_256_GCM");
+        if (Object::object(ctx, array_name.str()).type() == Object::Type::Array) {
+          continue;
+        }
 
-      createArray(ctx, array_name.str(), arraytype, datatype);
-      if(writeData(ctx, array_name.str(), datatype) != Query::Status::COMPLETE) {
-        std::cerr << "Writing data for " << array_name.str() << " failed!" << std::endl;
-        return 1;
+        createArray(ctx, array_name.str(), arraytype, datatype, encryption_type);
+        if (writeData(ctx, array_name.str(), datatype, encryption_type) != Query::Status::COMPLETE) {
+          std::cerr << "Writing data for " << array_name.str() << " failed!" << std::endl;
+          return 1;
+        }
       }
     }
   }
