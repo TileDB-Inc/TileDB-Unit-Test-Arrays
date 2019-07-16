@@ -185,13 +185,13 @@ void createArray(Context ctx, std::string array_name, tiledb_array_type_t array_
       break;
     }
     case TILEDB_FLOAT32: {
-      domain.add_dimension(Dimension::create<float>(ctx, "rows", {{1, 4}}))
-          .add_dimension(Dimension::create<float>(ctx, "cols", {{1, 4}}));
+      domain.add_dimension(Dimension::create<float>(ctx, "rows", {{1, 4}}, 4))
+          .add_dimension(Dimension::create<float>(ctx, "cols", {{1, 4}}, 4));
       break;
     }
     case TILEDB_FLOAT64: {
-      domain.add_dimension(Dimension::create<double>(ctx, "rows", {{1, 4}}))
-          .add_dimension(Dimension::create<double>(ctx, "cols", {{1, 4}}));
+      domain.add_dimension(Dimension::create<double>(ctx, "rows", {{1, 4}}, 4))
+          .add_dimension(Dimension::create<double>(ctx, "cols", {{1, 4}}, 4));
       break;
     }
     default: {
@@ -257,7 +257,7 @@ Query::Status writeData(Context ctx, std::string array_name, tiledb_datatype_t d
   if (encryption_type == TILEDB_NO_ENCRYPTION)
     array = new Array(ctx, array_name, TILEDB_WRITE);
   else
-    array = new Array(ctx, array_name, TILEDB_WRITE, encryption_type, encryption_key.c_str(), encryption_key.size() * sizeof(char));
+    array = new Array(ctx, array_name, TILEDB_WRITE, encryption_type, encryption_key);
   Query query(ctx, *array, TILEDB_WRITE);
   query.set_layout(TILEDB_UNORDERED);
 
