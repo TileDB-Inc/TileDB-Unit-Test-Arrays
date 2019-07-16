@@ -51,6 +51,19 @@ std::vector<tiledb_datatype_t> dimension_dense_datatypes = {
     TILEDB_UINT32,
     TILEDB_INT64,
     TILEDB_UINT64,
+    TILEDB_DATETIME_YEAR,
+    TILEDB_DATETIME_MONTH,
+    TILEDB_DATETIME_WEEK,
+    TILEDB_DATETIME_DAY,
+    TILEDB_DATETIME_HR,
+    TILEDB_DATETIME_MIN,
+    TILEDB_DATETIME_SEC,
+    TILEDB_DATETIME_MS,
+    TILEDB_DATETIME_US,
+    TILEDB_DATETIME_NS,
+    TILEDB_DATETIME_PS,
+    TILEDB_DATETIME_FS,
+    TILEDB_DATETIME_AS
 };
 
 // Dimensions valid for sparse arrays
@@ -65,6 +78,19 @@ std::vector<tiledb_datatype_t> dimension_sparse_datatypes = {
     TILEDB_UINT64,
     TILEDB_FLOAT32,
     TILEDB_FLOAT64,
+    TILEDB_DATETIME_YEAR,
+    TILEDB_DATETIME_MONTH,
+    TILEDB_DATETIME_WEEK,
+    TILEDB_DATETIME_DAY,
+    TILEDB_DATETIME_HR,
+    TILEDB_DATETIME_MIN,
+    TILEDB_DATETIME_SEC,
+    TILEDB_DATETIME_MS,
+    TILEDB_DATETIME_US,
+    TILEDB_DATETIME_NS,
+    TILEDB_DATETIME_PS,
+    TILEDB_DATETIME_FS,
+    TILEDB_DATETIME_AS
 };
 
 // Attribute types to check, currently ignoring ANY and STRING_* due to c++ api limitations
@@ -87,6 +113,19 @@ std::vector<tiledb_datatype_t> attribute_types = {
     TILEDB_STRING_UCS2,
     TILEDB_STRING_UCS4,
     TILEDB_ANY*/
+    TILEDB_DATETIME_YEAR,
+    TILEDB_DATETIME_MONTH,
+    TILEDB_DATETIME_WEEK,
+    TILEDB_DATETIME_DAY,
+    TILEDB_DATETIME_HR,
+    TILEDB_DATETIME_MIN,
+    TILEDB_DATETIME_SEC,
+    TILEDB_DATETIME_MS,
+    TILEDB_DATETIME_US,
+    TILEDB_DATETIME_NS,
+    TILEDB_DATETIME_PS,
+    TILEDB_DATETIME_FS,
+    TILEDB_DATETIME_AS
 };
 
 // Filters to test
@@ -174,7 +213,20 @@ void createArray(Context ctx, std::string array_name, tiledb_array_type_t array_
           .add_dimension(Dimension::create<uint32_t>(ctx, "cols", {{1, 4}}, 4));
       break;
     }
-    case TILEDB_INT64: {
+    case TILEDB_INT64:
+    case TILEDB_DATETIME_YEAR:
+    case TILEDB_DATETIME_MONTH:
+    case TILEDB_DATETIME_WEEK:
+    case TILEDB_DATETIME_DAY:
+    case TILEDB_DATETIME_HR:
+    case TILEDB_DATETIME_MIN:
+    case TILEDB_DATETIME_SEC:
+    case TILEDB_DATETIME_MS:
+    case TILEDB_DATETIME_US:
+    case TILEDB_DATETIME_NS:
+    case TILEDB_DATETIME_PS:
+    case TILEDB_DATETIME_FS:
+    case TILEDB_DATETIME_AS: {
       domain.add_dimension(Dimension::create<int64_t>(ctx, "rows", {{1, 4}}, 4))
           .add_dimension(Dimension::create<int64_t>(ctx, "cols", {{1, 4}}, 4));
       break;
@@ -315,7 +367,20 @@ Query::Status writeData(Context ctx, std::string array_name, tiledb_datatype_t d
       buffers.emplace_back(nullptr, std::move(values));
       break;
     }
-    case TILEDB_INT64: {
+    case TILEDB_INT64:
+    case TILEDB_DATETIME_YEAR:
+    case TILEDB_DATETIME_MONTH:
+    case TILEDB_DATETIME_WEEK:
+    case TILEDB_DATETIME_DAY:
+    case TILEDB_DATETIME_HR:
+    case TILEDB_DATETIME_MIN:
+    case TILEDB_DATETIME_SEC:
+    case TILEDB_DATETIME_MS:
+    case TILEDB_DATETIME_US:
+    case TILEDB_DATETIME_NS:
+    case TILEDB_DATETIME_PS:
+    case TILEDB_DATETIME_FS:
+    case TILEDB_DATETIME_AS: {
       std::shared_ptr<std::vector<int64_t>> values = std::make_shared<std::vector<int64_t>>();
       values->push_back(1);
       values->push_back(1);
@@ -437,7 +502,20 @@ std::pair<std::unique_ptr<std::vector<uint64_t>>, std::shared_ptr<void>> addData
       }
       return std::make_pair(std::move(offsets), std::move(values));
     }
-    case TILEDB_INT64: {
+    case TILEDB_INT64:
+    case TILEDB_DATETIME_YEAR:
+    case TILEDB_DATETIME_MONTH:
+    case TILEDB_DATETIME_WEEK:
+    case TILEDB_DATETIME_DAY:
+    case TILEDB_DATETIME_HR:
+    case TILEDB_DATETIME_MIN:
+    case TILEDB_DATETIME_SEC:
+    case TILEDB_DATETIME_MS:
+    case TILEDB_DATETIME_US:
+    case TILEDB_DATETIME_NS:
+    case TILEDB_DATETIME_PS:
+    case TILEDB_DATETIME_FS:
+    case TILEDB_DATETIME_AS: {
       std::shared_ptr<std::vector<int64_t>> values = std::make_shared<std::vector<int64_t>>();
       values->push_back(1);
       if (variableLength) {
