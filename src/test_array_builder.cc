@@ -51,6 +51,12 @@ std::vector<tiledb_datatype_t> dimension_dense_datatypes = {
     TILEDB_UINT32,
     TILEDB_INT64,
     TILEDB_UINT64,
+    TILEDB_STRING_ASCII,
+    TILEDB_STRING_UTF8,
+    TILEDB_STRING_UTF16,
+    TILEDB_STRING_UTF32,
+    TILEDB_STRING_UCS2,
+    TILEDB_STRING_UCS4,
     TILEDB_DATETIME_YEAR,
     TILEDB_DATETIME_MONTH,
     TILEDB_DATETIME_WEEK,
@@ -78,6 +84,12 @@ std::vector<tiledb_datatype_t> dimension_sparse_datatypes = {
     TILEDB_UINT64,
     TILEDB_FLOAT32,
     TILEDB_FLOAT64,
+    TILEDB_STRING_ASCII,
+    TILEDB_STRING_UTF8,
+    TILEDB_STRING_UTF16,
+    TILEDB_STRING_UTF32,
+    TILEDB_STRING_UCS2,
+    TILEDB_STRING_UCS4,
     TILEDB_DATETIME_YEAR,
     TILEDB_DATETIME_MONTH,
     TILEDB_DATETIME_WEEK,
@@ -246,6 +258,12 @@ void createArray(Context ctx, std::string array_name, tiledb_array_type_t array_
           .add_dimension(Dimension::create<double>(ctx, "cols", {{1, 4}}, 4));
       break;
     }
+    case TILEDB_STRING_ASCII:
+    case TILEDB_STRING_UTF8:
+    case TILEDB_STRING_UTF16:
+    case TILEDB_STRING_UTF32:
+    case TILEDB_STRING_UCS2:
+    case TILEDB_STRING_UCS4:
     default: {
       assert(false);
     }
@@ -412,6 +430,12 @@ Query::Status writeData(Context ctx, std::string array_name, tiledb_datatype_t d
       buffers.emplace_back(nullptr, std::move(values));
       break;
     }
+    case TILEDB_STRING_ASCII:
+    case TILEDB_STRING_UTF8:
+    case TILEDB_STRING_UTF16:
+    case TILEDB_STRING_UTF32:
+    case TILEDB_STRING_UCS2:
+    case TILEDB_STRING_UCS4:
     default: {
       assert(false);
     }
