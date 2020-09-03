@@ -84,7 +84,7 @@ std::vector<tiledb_datatype_t> dimension_sparse_datatypes = {
     TILEDB_UINT64,
     TILEDB_FLOAT32,
     TILEDB_FLOAT64,
-//    TILEDB_STRING_ASCII,
+    TILEDB_STRING_ASCII,
     /*TILEDB_STRING_UTF8,
     TILEDB_STRING_UTF16,
     TILEDB_STRING_UTF32,
@@ -263,16 +263,16 @@ void createArray(Context ctx, std::string array_name, tiledb_array_type_t array_
               .add_dimension(Dimension::create<char>(ctx, "cols", {{1, 4}}, 4));
       break;
     }
-    /*case TILEDB_STRING_ASCII:{
-   *//* case TILEDB_STRING_UTF8:
+    case TILEDB_STRING_ASCII:{
+    /*case TILEDB_STRING_UTF8:
     case TILEDB_STRING_UTF16:
     case TILEDB_STRING_UTF32:
     case TILEDB_STRING_UCS2:
-    case TILEDB_STRING_UCS4:{*//*
+    case TILEDB_STRING_UCS4:{*/
       domain.add_dimension(Dimension::create(ctx, "rows",TILEDB_STRING_ASCII ,nullptr, nullptr))
               .add_dimension(Dimension::create(ctx, "cols", TILEDB_STRING_ASCII ,nullptr, nullptr));
       break;
-    }*/
+    }
     default: {
       assert(false);
     }
