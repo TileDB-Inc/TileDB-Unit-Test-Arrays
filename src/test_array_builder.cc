@@ -344,7 +344,8 @@ Query::Status writeData(Context ctx, std::string array_name, tiledb_datatype_t d
 
   // Hold a reference to the buffers so they exists until we are finished writting
   std::vector<std::pair<std::unique_ptr<std::vector<uint64_t>>, std::shared_ptr<void>>> buffers;
-
+  std::unique_ptr<std::vector<uint64_t>> offsets = std::unique_ptr<std::vector<uint64_t>>(new std::vector<uint64_t>);
+  offsets->push_back(0);
   // Set the coordinates for the unordered write
   switch (dimensionType) {
     case TILEDB_INT8: {
@@ -483,8 +484,6 @@ Query::Status writeData(Context ctx, std::string array_name, tiledb_datatype_t d
     }
     case TILEDB_STRING_ASCII:
     case TILEDB_STRING_UTF8:{
-      std::unique_ptr<std::vector<uint64_t>> offsets = std::unique_ptr<std::vector<uint64_t>>(new std::vector<uint64_t>);
-      offsets->push_back(0);
       std::shared_ptr<std::vector<std::string>> d_row = std::make_shared<std::vector<std::string>>();
       std::shared_ptr<std::vector<std::string>> d_col = std::make_shared<std::vector<std::string>>();
       std::string val = "1";
@@ -498,8 +497,6 @@ Query::Status writeData(Context ctx, std::string array_name, tiledb_datatype_t d
     }
     case TILEDB_STRING_UTF16:
     case TILEDB_STRING_UCS2:{
-      std::unique_ptr<std::vector<uint64_t>> offsets = std::unique_ptr<std::vector<uint64_t>>(new std::vector<uint64_t>);
-      offsets->push_back(0);
       std::shared_ptr<std::vector<std::u16string>> d_row = std::make_shared<std::vector<std::u16string>>();
       std::shared_ptr<std::vector<std::u16string>> d_col = std::make_shared<std::vector<std::u16string>>();
       std::u16string d_val = u"1";
@@ -513,8 +510,6 @@ Query::Status writeData(Context ctx, std::string array_name, tiledb_datatype_t d
     }
     case TILEDB_STRING_UTF32:
     case TILEDB_STRING_UCS4:{
-      std::unique_ptr<std::vector<uint64_t>> offsets = std::unique_ptr<std::vector<uint64_t>>(new std::vector<uint64_t>);
-      offsets->push_back(0);
       std::shared_ptr<std::vector<std::u32string>> d_row = std::make_shared<std::vector<std::u32string>>();
       std::shared_ptr<std::vector<std::u32string>> d_col = std::make_shared<std::vector<std::u32string>>();
       std::u32string d_val = U"1";
@@ -751,13 +746,15 @@ int main() {
           continue;
         }
 
+        std::cerr << "Creating array " << array_name.str() << std::endl;
         createArray(ctx, array_name.str(), arraytype, datatype, encryption_type);
+        std::cerr << "Created array " << array_name.str() << std::endl;
         if (writeData(ctx, array_name.str(), datatype, encryption_type) != Query::Status::COMPLETE) {
           std::cerr << "Writing data for " << array_name.str() << " failed!" << std::endl;
           return 1;
         }
+        std::cerr << "Wrote array " << array_name.str() << std::endl;
       }
     }
   }
 }
-
