@@ -204,11 +204,6 @@ void createArray(Context ctx, std::string array_name,
     break;
   }
   case TILEDB_STRING_ASCII: {
-    /*case TILEDB_STRING_UTF8:
-    case TILEDB_STRING_UTF16:
-    case TILEDB_STRING_UTF32:
-    case TILEDB_STRING_UCS2:
-    case TILEDB_STRING_UCS4:{*/
     domain
         .add_dimension(Dimension::create(ctx, "rows", TILEDB_STRING_ASCII,
                                          nullptr, nullptr))
