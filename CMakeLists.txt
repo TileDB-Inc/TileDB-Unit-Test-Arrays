@@ -25,7 +25,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 #
-project("TILEDB UNITTEST ARRAYS")
+project("TileDBUnitTestArrays")
 cmake_minimum_required(VERSION 3.3)
 find_package(TileDB REQUIRED)
 add_executable(test_array_builder src/test_array_builder.cc)
