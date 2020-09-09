@@ -5,14 +5,16 @@ which can build new tiledb arrays based on a globally installed version of tiled
 
 ## Building New Arrays
 
-To build new arrays first compile then run the `test_array_builder`:
+To build new arrays first compile then run the `test_array_builder`. Run
+the following commands, replacing "/your/path/to/TileDB/dist/" with your own
+installation path.
 
 ```
 git clone https://github.com/TileDB-Inc/TileDB-Unit-Test-Arrays.git
 cd TileDB-Unit-Test-Arrays
 mkdir build
 cd build
-cmake ..
+cmake .. -DCMAKE_PREFIX_PATH="/your/path/to/TileDB/dist/"
 make
 ./test_array_builder
 ```
