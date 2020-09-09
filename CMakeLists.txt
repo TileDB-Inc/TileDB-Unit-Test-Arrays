@@ -25,8 +25,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 #
+project("TileDBUnitTestArrays")
 cmake_minimum_required(VERSION 3.3)
-
 find_package(TileDB REQUIRED)
 add_executable(test_array_builder src/test_array_builder.cc)
 target_link_libraries(test_array_builder TileDB::tiledb_shared)
