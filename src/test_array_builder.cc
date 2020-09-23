@@ -62,8 +62,7 @@ std::vector<tiledb_datatype_t> dimension_sparse_datatypes = {
     TILEDB_DATETIME_MS,    TILEDB_DATETIME_US,   TILEDB_DATETIME_NS,
     TILEDB_DATETIME_PS,    TILEDB_DATETIME_FS,   TILEDB_DATETIME_AS};
 
-// Attribute types to check, currently ignoring ANY and STRING_* due to c++ api
-// limitations
+// Attribute types to check
 std::vector<tiledb_datatype_t> attribute_types = {
     TILEDB_INT8,           TILEDB_UINT8,         TILEDB_INT16,
     TILEDB_UINT16,         TILEDB_INT32,         TILEDB_UINT32,
@@ -198,11 +197,6 @@ void createArray(Context ctx, std::string array_name,
         .add_dimension(Dimension::create<double>(ctx, "cols", {{1, 4}}, 4));
     break;
   }
-  case TILEDB_CHAR: {
-    domain.add_dimension(Dimension::create<char>(ctx, "rows", {{1, 4}}, 4))
-        .add_dimension(Dimension::create<char>(ctx, "cols", {{1, 4}}, 4));
-    break;
-  }
   case TILEDB_STRING_ASCII: {
     domain
         .add_dimension(Dimension::create(ctx, "rows", TILEDB_STRING_ASCII,
@@ -211,9 +205,7 @@ void createArray(Context ctx, std::string array_name,
                                          nullptr, nullptr));
     break;
   }
-  default: {
-    assert(false);
-  }
+  default: { assert(false); }
   }
 
   // Create array schema
@@ -281,7 +273,6 @@ Query::Status writeData(Context ctx, std::string array_name,
   else
     array = new Array(ctx, array_name, TILEDB_WRITE, encryption_type,
                       encryption_key);
-
   Query query(ctx, *array, TILEDB_WRITE);
   query.set_layout(TILEDB_UNORDERED);
 
@@ -438,15 +429,14 @@ Query::Status writeData(Context ctx, std::string array_name,
     buffers.emplace_back(nullptr, std::move(d_col));
     break;
   }
-  case TILEDB_STRING_ASCII:
-  case TILEDB_STRING_UTF8: {
-    std::shared_ptr<std::vector<std::string>> d_row =
-        std::make_shared<std::vector<std::string>>();
-    std::shared_ptr<std::vector<std::string>> d_col =
-        std::make_shared<std::vector<std::string>>();
-    std::string val = "1";
-    d_row->push_back(val);
-    d_col->push_back(val);
+  case TILEDB_STRING_ASCII: {
+    std::shared_ptr<std::vector<char>> d_row =
+        std::make_shared<std::vector<char>>();
+    std::shared_ptr<std::vector<char>> d_col =
+        std::make_shared<std::vector<char>>();
+    // std::string val = "1";
+    d_row->push_back('1');
+    d_col->push_back('1');
     std::unique_ptr<std::vector<uint64_t>> offsets_row =
         std::unique_ptr<std::vector<uint64_t>>(new std::vector<uint64_t>);
     std::unique_ptr<std::vector<uint64_t>> offsets_col =
@@ -460,55 +450,7 @@ Query::Status writeData(Context ctx, std::string array_name,
     buffers.emplace_back(std::move(offsets_col), std::move(d_col));
     break;
   }
-  case TILEDB_STRING_UTF16:
-  case TILEDB_STRING_UCS2: {
-    std::shared_ptr<std::vector<std::u16string>> d_row =
-        std::make_shared<std::vector<std::u16string>>();
-    std::shared_ptr<std::vector<std::u16string>> d_col =
-        std::make_shared<std::vector<std::u16string>>();
-    std::u16string d_val = u"1";
-    d_row->push_back(d_val);
-    d_col->push_back(d_val);
-
-    std::unique_ptr<std::vector<uint64_t>> offsets_row =
-        std::unique_ptr<std::vector<uint64_t>>(new std::vector<uint64_t>);
-    std::unique_ptr<std::vector<uint64_t>> offsets_col =
-        std::unique_ptr<std::vector<uint64_t>>(new std::vector<uint64_t>);
-    offsets_row->push_back(0);
-    offsets_col->push_back(0);
-
-    query.set_buffer("rows", *offsets_row, *d_row)
-        .set_buffer("cols", *offsets_col, *d_col);
-    buffers.emplace_back(std::move(offsets_row), std::move(d_row));
-    buffers.emplace_back(std::move(offsets_col), std::move(d_col));
-    break;
-  }
-  case TILEDB_STRING_UTF32:
-  case TILEDB_STRING_UCS4: {
-    std::shared_ptr<std::vector<std::u32string>> d_row =
-        std::make_shared<std::vector<std::u32string>>();
-    std::shared_ptr<std::vector<std::u32string>> d_col =
-        std::make_shared<std::vector<std::u32string>>();
-    std::u32string d_val = U"1";
-    d_row->push_back(d_val);
-    d_col->push_back(d_val);
-
-    std::unique_ptr<std::vector<uint64_t>> offsets_row =
-        std::unique_ptr<std::vector<uint64_t>>(new std::vector<uint64_t>);
-    std::unique_ptr<std::vector<uint64_t>> offsets_col =
-        std::unique_ptr<std::vector<uint64_t>>(new std::vector<uint64_t>);
-    offsets_row->push_back(0);
-    offsets_col->push_back(0);
-
-    query.set_buffer("rows", *offsets_row, *d_row)
-        .set_buffer("cols", *offsets_row, *d_col);
-    buffers.emplace_back(std::move(offsets_row), std::move(d_row));
-    buffers.emplace_back(std::move(offsets_col), std::move(d_col));
-    break;
-  }
-  default: {
-    assert(false);
-  }
+  default: { assert(false); }
   }
 
   // Set the buffer for each attribute
@@ -664,7 +606,10 @@ addDataToQuery(Query *query, std::string attributeName,
     }
     return std::make_pair(std::move(offsets), std::move(values));
   }
-  case TILEDB_CHAR: {
+  case TILEDB_CHAR:
+  case TILEDB_STRING_ASCII:
+  case TILEDB_STRING_UTF8:
+  case TILEDB_ANY: {
     std::shared_ptr<std::vector<char>> values =
         std::make_shared<std::vector<char>>();
     values->push_back('1');
@@ -675,23 +620,11 @@ addDataToQuery(Query *query, std::string attributeName,
     }
     return std::make_pair(std::move(offsets), std::move(values));
   }
-  case TILEDB_STRING_ASCII:
-  case TILEDB_STRING_UTF8: {
-    std::shared_ptr<std::vector<std::string>> values =
-        std::make_shared<std::vector<std::string>>();
-    values->push_back("1");
-    if (variableLength) {
-      query->set_buffer(attributeName, *offsets, *values);
-    } else {
-      query->set_buffer(attributeName, *values);
-    }
-    return std::make_pair(std::move(offsets), std::move(values));
-  }
   case TILEDB_STRING_UTF16:
   case TILEDB_STRING_UCS2: {
-    std::shared_ptr<std::vector<std::u16string>> values =
-        std::make_shared<std::vector<std::u16string>>();
-    values->push_back(u"1");
+    std::shared_ptr<std::vector<uint16_t>> values =
+        std::make_shared<std::vector<uint16_t>>();
+    values->push_back(u'1');
     if (variableLength) {
       query->set_buffer(attributeName, *offsets, *values);
     } else {
@@ -701,9 +634,9 @@ addDataToQuery(Query *query, std::string attributeName,
   }
   case TILEDB_STRING_UTF32:
   case TILEDB_STRING_UCS4: {
-    std::shared_ptr<std::vector<std::u32string>> values =
-        std::make_shared<std::vector<std::u32string>>();
-    values->push_back(U"1");
+    std::shared_ptr<std::vector<uint32_t>> values =
+        std::make_shared<std::vector<uint32_t>>();
+    values->push_back(U'1');
     if (variableLength) {
       query->set_buffer(attributeName, *offsets, *values);
     } else {
@@ -765,7 +698,7 @@ int main() {
         std::cout << "Created array " << array_name.str() << std::endl;
         if (writeData(ctx, array_name.str(), datatype, encryption_type) !=
             Query::Status::COMPLETE) {
-          std::cout << "Writing data for " << array_name.str() << " failed!"
+          std::cerr << "Writing data for " << array_name.str() << " failed!"
                     << std::endl;
           return 1;
         }
