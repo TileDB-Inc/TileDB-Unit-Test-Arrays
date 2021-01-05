@@ -120,9 +120,10 @@ bool doubleDeltaCapable(tiledb_datatype_t datatype) {
   }
 }
 
-std::pair<std::unique_ptr<std::vector<uint64_t>>, std::shared_ptr<void>>
+std::tuple<std::unique_ptr<std::vector<uint64_t>>, std::shared_ptr<void>,
+           std::unique_ptr<std::vector<uint8_t>>>
 addDataToQuery(Query *query, std::string attributeName,
-               tiledb_datatype_t datatype, bool variableLength);
+               tiledb_datatype_t datatype, bool variableLength, bool nullable);
 
 /**
  * Create an array on disk for a given array type and dimension type. All
@@ -242,8 +243,10 @@ void createArray(const Context &ctx, const std::string &array_name,
       if (datatype != TILEDB_ANY) {
         std::string attributeName = "attribute_" + impl::type_to_str(datatype) +
                                     "_" + Filter::to_str(filter);
+        // Make every-other attribute nullable.
         schema.add_attribute(Attribute(ctx, attributeName, datatype)
-                                 .set_filter_list(filterList));
+                                 .set_filter_list(filterList)
+                                 .set_nullable(i % 2 == 0));
       }
 
       // Create a variable length version of a given array type
@@ -255,6 +258,7 @@ void createArray(const Context &ctx, const std::string &array_name,
       if (datatype != TILEDB_ANY) {
         varAttr.set_cell_val_num(TILEDB_VAR_NUM);
       }
+      varAttr.set_nullable(i % 2 == 0);
       schema.add_attribute(varAttr);
     }
   }
@@ -292,9 +296,10 @@ Query::Status writeData(const Context &ctx, const std::string &array_name,
   query.set_layout(TILEDB_UNORDERED);
 
   // Hold a reference to the buffers so they exists until we are finished
-  // writting
+  // writing.
   std::vector<
-      std::pair<std::unique_ptr<std::vector<uint64_t>>, std::shared_ptr<void>>>
+      std::tuple<std::unique_ptr<std::vector<uint64_t>>, std::shared_ptr<void>,
+                 std::unique_ptr<std::vector<uint8_t>>>>
       buffers;
 
   // Set the coordinates for the unordered write
@@ -423,9 +428,9 @@ Query::Status writeData(const Context &ctx, const std::string &array_name,
 
   // Set the buffer for each attribute
   for (auto attribute : array->schema().attributes()) {
-    auto buffer =
-        addDataToQuery(&query, attribute.first, attribute.second.type(),
-                       attribute.second.variable_sized());
+    auto buffer = addDataToQuery(
+        &query, attribute.first, attribute.second.type(),
+        attribute.second.variable_sized(), attribute.second.nullable());
     buffers.push_back(std::move(buffer));
   }
   Query::Status status = query.submit();
@@ -437,6 +442,45 @@ Query::Status writeData(const Context &ctx, const std::string &array_name,
 }
 
 /**
+ * Helper function for setting generic value datatypes that may be
+ * var-sized and/or nullable.
+ * @param query
+ * @param attributeName
+ * @param variableLength
+ * @param nullable
+ * @param offsets
+ * @param values
+ * @param validity
+ * @return std::tuple
+ */
+template <typename T>
+std::tuple<std::unique_ptr<std::vector<uint64_t>>, std::shared_ptr<void>,
+           std::unique_ptr<std::vector<uint8_t>>>
+set_buffer_wrapper(Query *query, const std::string &attributeName,
+                   const bool variableLength, const bool nullable,
+                   std::unique_ptr<std::vector<uint64_t>> &&offsets,
+                   std::shared_ptr<std::vector<T>> &&values,
+                   std::unique_ptr<std::vector<uint8_t>> &&validity) {
+
+  if (variableLength) {
+    if (!nullable) {
+      query->set_buffer(attributeName, *offsets, *values);
+    } else {
+      query->set_buffer_nullable(attributeName, *offsets, *values, *validity);
+    }
+  } else {
+    if (!nullable) {
+      query->set_buffer(attributeName, *values);
+    } else {
+      query->set_buffer_nullable(attributeName, *values, *validity);
+    }
+  }
+
+  return std::make_tuple(std::move(offsets), std::move(values),
+                         std::move(validity));
+}
+
+/**
  * Helper function to add data to a query
  * @param query
  * @param attributeName
@@ -444,78 +488,66 @@ Query::Status writeData(const Context &ctx, const std::string &array_name,
  * @param variableLength
  * @return
  */
-std::pair<std::unique_ptr<std::vector<uint64_t>>, std::shared_ptr<void>>
+std::tuple<std::unique_ptr<std::vector<uint64_t>>, std::shared_ptr<void>,
+           std::unique_ptr<std::vector<uint8_t>>>
 addDataToQuery(Query *query, std::string attributeName,
-               tiledb_datatype_t datatype, bool variableLength) {
+               tiledb_datatype_t datatype, bool variableLength, bool nullable) {
   std::unique_ptr<std::vector<uint64_t>> offsets =
       std::unique_ptr<std::vector<uint64_t>>(new std::vector<uint64_t>);
   offsets->push_back(0);
+
+  std::unique_ptr<std::vector<uint8_t>> validity =
+      std::unique_ptr<std::vector<uint8_t>>(new std::vector<uint8_t>);
+  validity->push_back(1);
+
   switch (datatype) {
   case TILEDB_INT8: {
     std::shared_ptr<std::vector<int8_t>> values =
         std::make_shared<std::vector<int8_t>>();
     values->push_back(1);
-    if (variableLength) {
-      query->set_buffer(attributeName, *offsets, *values);
-    } else {
-      query->set_buffer(attributeName, *values);
-    }
-    return std::make_pair(std::move(offsets), std::move(values));
+    return set_buffer_wrapper(query, attributeName, variableLength, nullable,
+                              std::move(offsets), std::move(values),
+                              std::move(validity));
   }
   case TILEDB_UINT8: {
     std::shared_ptr<std::vector<uint8_t>> values =
         std::make_shared<std::vector<uint8_t>>();
     values->push_back(1);
-    if (variableLength) {
-      query->set_buffer(attributeName, *offsets, *values);
-    } else {
-      query->set_buffer(attributeName, *values);
-    }
-    return std::make_pair(std::move(offsets), std::move(values));
+    return set_buffer_wrapper(query, attributeName, variableLength, nullable,
+                              std::move(offsets), std::move(values),
+                              std::move(validity));
   }
   case TILEDB_INT16: {
     std::shared_ptr<std::vector<int16_t>> values =
         std::make_shared<std::vector<int16_t>>();
     values->push_back(1);
-    if (variableLength) {
-      query->set_buffer(attributeName, *offsets, *values);
-    } else {
-      query->set_buffer(attributeName, *values);
-    }
-    return std::make_pair(std::move(offsets), std::move(values));
+    return set_buffer_wrapper(query, attributeName, variableLength, nullable,
+                              std::move(offsets), std::move(values),
+                              std::move(validity));
   }
   case TILEDB_UINT16: {
     std::shared_ptr<std::vector<uint16_t>> values =
         std::make_shared<std::vector<uint16_t>>();
     values->push_back(1);
-    if (variableLength) {
-      query->set_buffer(attributeName, *offsets, *values);
-    } else {
-      query->set_buffer(attributeName, *values);
-    }
-    return std::make_pair(std::move(offsets), std::move(values));
+    return set_buffer_wrapper(query, attributeName, variableLength, nullable,
+                              std::move(offsets), std::move(values),
+                              std::move(validity));
   }
   case TILEDB_INT32: {
     std::shared_ptr<std::vector<int32_t>> values =
         std::make_shared<std::vector<int32_t>>();
     values->push_back(1);
-    if (variableLength) {
-      query->set_buffer(attributeName, *offsets, *values);
-    } else {
-      query->set_buffer(attributeName, *values);
-    }
-    return std::make_pair(std::move(offsets), std::move(values));
+    return set_buffer_wrapper(query, attributeName, variableLength, nullable,
+                              std::move(offsets), std::move(values),
+                              std::move(validity));
   }
   case TILEDB_UINT32: {
     std::shared_ptr<std::vector<uint32_t>> values =
         std::make_shared<std::vector<uint32_t>>();
     values->push_back(1);
-    if (variableLength) {
-      query->set_buffer(attributeName, *offsets, *values);
-    } else {
-      query->set_buffer(attributeName, *values);
-    }
-    return std::make_pair(std::move(offsets), std::move(values));
+    return set_buffer_wrapper(query, attributeName, variableLength, nullable,
+                              std::move(offsets), std::move(values),
+                              std::move(validity));
   }
   case TILEDB_INT64:
   case TILEDB_DATETIME_YEAR:
@@ -534,45 +566,33 @@ addDataToQuery(Query *query, std::string attributeName,
     std::shared_ptr<std::vector<int64_t>> values =
         std::make_shared<std::vector<int64_t>>();
     values->push_back(1);
-    if (variableLength) {
-      query->set_buffer(attributeName, *offsets, *values);
-    } else {
-      query->set_buffer(attributeName, *values);
-    }
-    return std::make_pair(std::move(offsets), std::move(values));
+    return set_buffer_wrapper(query, attributeName, variableLength, nullable,
+                              std::move(offsets), std::move(values),
+                              std::move(validity));
   }
   case TILEDB_UINT64: {
     std::shared_ptr<std::vector<uint64_t>> values =
         std::make_shared<std::vector<uint64_t>>();
     values->push_back(1);
-    if (variableLength) {
-      query->set_buffer(attributeName, *offsets, *values);
-    } else {
-      query->set_buffer(attributeName, *values);
-    }
-    return std::make_pair(std::move(offsets), std::move(values));
+    return set_buffer_wrapper(query, attributeName, variableLength, nullable,
+                              std::move(offsets), std::move(values),
+                              std::move(validity));
   }
   case TILEDB_FLOAT32: {
     std::shared_ptr<std::vector<float>> values =
         std::make_shared<std::vector<float>>();
     values->push_back(1);
-    if (variableLength) {
-      query->set_buffer(attributeName, *offsets, *values);
-    } else {
-      query->set_buffer(attributeName, *values);
-    }
-    return std::make_pair(std::move(offsets), std::move(values));
+    return set_buffer_wrapper(query, attributeName, variableLength, nullable,
+                              std::move(offsets), std::move(values),
+                              std::move(validity));
   }
   case TILEDB_FLOAT64: {
     std::shared_ptr<std::vector<double>> values =
         std::make_shared<std::vector<double>>();
     values->push_back(1);
-    if (variableLength) {
-      query->set_buffer(attributeName, *offsets, *values);
-    } else {
-      query->set_buffer(attributeName, *values);
-    }
-    return std::make_pair(std::move(offsets), std::move(values));
+    return set_buffer_wrapper(query, attributeName, variableLength, nullable,
+                              std::move(offsets), std::move(values),
+                              std::move(validity));
   }
   case TILEDB_CHAR:
   case TILEDB_STRING_ASCII:
@@ -581,39 +601,30 @@ addDataToQuery(Query *query, std::string attributeName,
     std::shared_ptr<std::vector<char>> values =
         std::make_shared<std::vector<char>>();
     values->push_back('1');
-    if (variableLength) {
-      query->set_buffer(attributeName, *offsets, *values);
-    } else {
-      query->set_buffer(attributeName, *values);
-    }
-    return std::make_pair(std::move(offsets), std::move(values));
+    return set_buffer_wrapper(query, attributeName, variableLength, nullable,
+                              std::move(offsets), std::move(values),
+                              std::move(validity));
   }
   case TILEDB_STRING_UTF16:
   case TILEDB_STRING_UCS2: {
     std::shared_ptr<std::vector<char16_t>> values =
         std::make_shared<std::vector<char16_t>>();
     values->push_back(u'1');
-    if (variableLength) {
-      query->set_buffer(attributeName, *offsets, *values);
-    } else {
-      query->set_buffer(attributeName, *values);
-    }
-    return std::make_pair(std::move(offsets), std::move(values));
+    return set_buffer_wrapper(query, attributeName, variableLength, nullable,
+                              std::move(offsets), std::move(values),
+                              std::move(validity));
   }
   case TILEDB_STRING_UTF32:
   case TILEDB_STRING_UCS4: {
     std::shared_ptr<std::vector<char32_t>> values =
         std::make_shared<std::vector<char32_t>>();
     values->push_back(U'1');
-    if (variableLength) {
-      query->set_buffer(attributeName, *offsets, *values);
-    } else {
-      query->set_buffer(attributeName, *values);
-    }
-    return std::make_pair(std::move(offsets), std::move(values));
+    return set_buffer_wrapper(query, attributeName, variableLength, nullable,
+                              std::move(offsets), std::move(values),
+                              std::move(validity));
   }
   }
-  return std::make_pair(nullptr, nullptr);
+  return std::make_tuple(nullptr, nullptr, nullptr);
 }
 
 bool build_homogeneous_arrays(const Context &ctx, const std::string &array_base,
@@ -704,10 +715,6 @@ bool build_heterogeneous_arrays(
 
 int main() {
   const std::tuple<int, int, int> &tiledbVersion = version();
-  const std::string version = "v" + std::to_string(std::get<0>(tiledbVersion)) +
-                              "_" + std::to_string(std::get<1>(tiledbVersion)) +
-                              "_" + std::to_string(std::get<2>(tiledbVersion));
-
   std::string array_base = "arrays";
 
   // Create a TileDB context.
