@@ -715,6 +715,9 @@ bool build_heterogeneous_arrays(
 
 int main() {
   const std::tuple<int, int, int> &tiledbVersion = version();
+  const std::string version = "v" + std::to_string(std::get<0>(tiledbVersion)) +
+                              "_" + std::to_string(std::get<1>(tiledbVersion)) +
+                              "_" + std::to_string(std::get<2>(tiledbVersion));
   std::string array_base = "arrays";
 
   // Create a TileDB context.
