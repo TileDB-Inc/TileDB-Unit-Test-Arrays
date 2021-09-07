@@ -314,7 +314,7 @@ Query::Status writeData(const Context &ctx, const std::string &array_name,
           std::make_shared<std::vector<int8_t>>();
       d->push_back(1);
       query.set_buffer(dimension_name, *d);
-      buffers.emplace_back(nullptr, std::move(d));
+      buffers.emplace_back(nullptr, std::move(d), nullptr);
       break;
     }
     case TILEDB_UINT8: {
@@ -322,7 +322,7 @@ Query::Status writeData(const Context &ctx, const std::string &array_name,
           std::make_shared<std::vector<uint8_t>>();
       d->push_back(1);
       query.set_buffer(dimension_name, *d);
-      buffers.emplace_back(nullptr, std::move(d));
+      buffers.emplace_back(nullptr, std::move(d), nullptr);
       break;
     }
     case TILEDB_INT16: {
@@ -330,7 +330,7 @@ Query::Status writeData(const Context &ctx, const std::string &array_name,
           std::make_shared<std::vector<int16_t>>();
       d->push_back(1);
       query.set_buffer(dimension_name, *d);
-      buffers.emplace_back(nullptr, std::move(d));
+      buffers.emplace_back(nullptr, std::move(d), nullptr);
       break;
     }
     case TILEDB_UINT16: {
@@ -338,7 +338,7 @@ Query::Status writeData(const Context &ctx, const std::string &array_name,
           std::make_shared<std::vector<uint16_t>>();
       d->push_back(1);
       query.set_buffer(dimension_name, *d);
-      buffers.emplace_back(nullptr, std::move(d));
+      buffers.emplace_back(nullptr, std::move(d), nullptr);
       break;
     }
     case TILEDB_INT32: {
@@ -346,7 +346,7 @@ Query::Status writeData(const Context &ctx, const std::string &array_name,
           std::make_shared<std::vector<int32_t>>();
       d->push_back(1);
       query.set_buffer(dimension_name, *d);
-      buffers.emplace_back(nullptr, std::move(d));
+      buffers.emplace_back(nullptr, std::move(d), nullptr);
       break;
     }
     case TILEDB_UINT32: {
@@ -354,7 +354,7 @@ Query::Status writeData(const Context &ctx, const std::string &array_name,
           std::make_shared<std::vector<uint32_t>>();
       d->push_back(1);
       query.set_buffer(dimension_name, *d);
-      buffers.emplace_back(nullptr, std::move(d));
+      buffers.emplace_back(nullptr, std::move(d), nullptr);
       break;
     }
     case TILEDB_INT64:
@@ -375,7 +375,7 @@ Query::Status writeData(const Context &ctx, const std::string &array_name,
           std::make_shared<std::vector<int64_t>>();
       d->push_back(1);
       query.set_buffer(dimension_name, *d);
-      buffers.emplace_back(nullptr, std::move(d));
+      buffers.emplace_back(nullptr, std::move(d), nullptr);
       break;
     }
     case TILEDB_UINT64: {
@@ -383,7 +383,7 @@ Query::Status writeData(const Context &ctx, const std::string &array_name,
           std::make_shared<std::vector<uint64_t>>();
       d->push_back(1);
       query.set_buffer(dimension_name, *d);
-      buffers.emplace_back(nullptr, std::move(d));
+      buffers.emplace_back(nullptr, std::move(d), nullptr);
       break;
     }
     case TILEDB_FLOAT32: {
@@ -391,7 +391,7 @@ Query::Status writeData(const Context &ctx, const std::string &array_name,
           std::make_shared<std::vector<float>>();
       d->push_back(1);
       query.set_buffer(dimension_name, *d);
-      buffers.emplace_back(nullptr, std::move(d));
+      buffers.emplace_back(nullptr, std::move(d), nullptr);
       break;
     }
     case TILEDB_FLOAT64: {
@@ -399,7 +399,7 @@ Query::Status writeData(const Context &ctx, const std::string &array_name,
           std::make_shared<std::vector<double>>();
       d->push_back(1);
       query.set_buffer(dimension_name, *d);
-      buffers.emplace_back(nullptr, std::move(d));
+      buffers.emplace_back(nullptr, std::move(d), nullptr);
       break;
     }
     case TILEDB_CHAR: {
@@ -407,7 +407,7 @@ Query::Status writeData(const Context &ctx, const std::string &array_name,
           std::make_shared<std::vector<char>>();
       d->push_back('1');
       query.set_buffer(dimension_name, *d);
-      buffers.emplace_back(nullptr, std::move(d));
+      buffers.emplace_back(nullptr, std::move(d), nullptr);
       break;
     }
     case TILEDB_STRING_ASCII: {
@@ -419,7 +419,7 @@ Query::Status writeData(const Context &ctx, const std::string &array_name,
       offsets->push_back(0);
 
       query.set_buffer(dimension_name, *offsets, *d);
-      buffers.emplace_back(std::move(offsets), std::move(d));
+      buffers.emplace_back(std::move(offsets), std::move(d), nullptr);
       break;
     }
     default: { assert(false); }
