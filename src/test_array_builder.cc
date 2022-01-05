@@ -151,32 +151,32 @@ void createArray(const Context &ctx, const std::string &array_name,
     switch (dimension_type) {
     case TILEDB_INT8: {
       domain.add_dimension(
-          Dimension::create<int8_t>(ctx, dimension_name, {{1, 4}}, 4));
+          Dimension::create<int8_t>(ctx, dimension_name, {{1, 4}}, 1));
       break;
     }
     case TILEDB_UINT8: {
       domain.add_dimension(
-          Dimension::create<uint8_t>(ctx, dimension_name, {{1, 4}}, 4));
+          Dimension::create<uint8_t>(ctx, dimension_name, {{1, 4}}, 1));
       break;
     }
     case TILEDB_INT16: {
       domain.add_dimension(
-          Dimension::create<int16_t>(ctx, dimension_name, {{1, 4}}, 4));
+          Dimension::create<int16_t>(ctx, dimension_name, {{1, 4}}, 1));
       break;
     }
     case TILEDB_UINT16: {
       domain.add_dimension(
-          Dimension::create<uint16_t>(ctx, dimension_name, {{1, 4}}, 4));
+          Dimension::create<uint16_t>(ctx, dimension_name, {{1, 4}}, 1));
       break;
     }
     case TILEDB_INT32: {
       domain.add_dimension(
-          Dimension::create<int32_t>(ctx, dimension_name, {{1, 4}}, 4));
+          Dimension::create<int32_t>(ctx, dimension_name, {{1, 4}}, 1));
       break;
     }
     case TILEDB_UINT32: {
       domain.add_dimension(
-          Dimension::create<uint32_t>(ctx, dimension_name, {{1, 4}}, 4));
+          Dimension::create<uint32_t>(ctx, dimension_name, {{1, 4}}, 1));
       break;
     }
     case TILEDB_INT64:
@@ -194,22 +194,22 @@ void createArray(const Context &ctx, const std::string &array_name,
     case TILEDB_DATETIME_FS:
     case TILEDB_DATETIME_AS: {
       domain.add_dimension(
-          Dimension::create<int64_t>(ctx, dimension_name, {{1, 4}}, 4));
+          Dimension::create<int64_t>(ctx, dimension_name, {{1, 4}}, 1));
       break;
     }
     case TILEDB_UINT64: {
       domain.add_dimension(
-          Dimension::create<uint64_t>(ctx, dimension_name, {{1, 4}}, 4));
+          Dimension::create<uint64_t>(ctx, dimension_name, {{1, 4}}, 1));
       break;
     }
     case TILEDB_FLOAT32: {
       domain.add_dimension(
-          Dimension::create<float>(ctx, dimension_name, {{1, 4}}, 4));
+          Dimension::create<float>(ctx, dimension_name, {{1, 4}}, 1));
       break;
     }
     case TILEDB_FLOAT64: {
       domain.add_dimension(
-          Dimension::create<double>(ctx, dimension_name, {{1, 4}}, 4));
+          Dimension::create<double>(ctx, dimension_name, {{1, 4}}, 1));
       break;
     }
     case TILEDB_STRING_ASCII: {
@@ -281,10 +281,10 @@ void createArray(const Context &ctx, const std::string &array_name,
  * @param encryption_type
  * @return
  */
-Query::Status writeData(const Context &ctx, const std::string &array_name,
-                        tiledb_datatype_t dimension_1_type,
-                        tiledb_datatype_t dimension_2_type,
-                        tiledb_encryption_type_t encryption_type) {
+Query::Status write_data_sparse(const Context &ctx, const std::string &array_name,
+                                tiledb_datatype_t dimension_1_type,
+                                tiledb_datatype_t dimension_2_type,
+                                tiledb_encryption_type_t encryption_type) {
 
   Array *array;
   if (encryption_type == TILEDB_NO_ENCRYPTION)
@@ -437,6 +437,176 @@ Query::Status writeData(const Context &ctx, const std::string &array_name,
 
   // Finalize the query since we are doing unordered writes
   query.finalize();
+  delete array;
+  return status;
+}
+
+/**
+ * Write a single data value of 1 to the the array for all attributes and
+ * dimension
+ * @param ctx
+ * @param array_name
+ * @param domain_type
+ * @param encryption_type
+ * @return
+ */
+Query::Status write_data_dense(const Context &ctx, const std::string &array_name,
+                                tiledb_datatype_t domain_type,
+                                tiledb_encryption_type_t encryption_type) {
+
+  Array *array;
+  if (encryption_type == TILEDB_NO_ENCRYPTION)
+    array = new Array(ctx, array_name, TILEDB_WRITE);
+  else
+    array = new Array(ctx, array_name, TILEDB_WRITE, encryption_type,
+                      encryption_key);
+  Query query(ctx, *array, TILEDB_WRITE);
+  query.set_layout(TILEDB_ROW_MAJOR);
+
+  // Hold a reference to the buffers so they exists until we are finished
+  // writing.
+  std::vector<
+      std::tuple<std::unique_ptr<std::vector<uint64_t>>, std::shared_ptr<void>,
+          std::unique_ptr<std::vector<uint8_t>>>>
+      buffers;
+
+  // Set the subarray for the dense write
+  switch (domain_type) {
+    case TILEDB_INT8: {
+      std::shared_ptr<std::vector<int8_t>> d =
+          std::make_shared<std::vector<int8_t>>();
+      d->push_back(1);
+      d->push_back(1);
+      d->push_back(1);
+      d->push_back(1);
+      query.set_subarray(*d);
+      buffers.emplace_back(nullptr, std::move(d), nullptr);
+      break;
+    }
+    case TILEDB_UINT8: {
+      std::shared_ptr<std::vector<uint8_t>> d =
+          std::make_shared<std::vector<uint8_t>>();
+      d->push_back(1);
+      d->push_back(1);
+      d->push_back(1);
+      d->push_back(1);
+      query.set_subarray(*d);
+      buffers.emplace_back(nullptr, std::move(d), nullptr);
+      break;
+    }
+    case TILEDB_INT16: {
+      std::shared_ptr<std::vector<int16_t>> d =
+          std::make_shared<std::vector<int16_t>>();
+      d->push_back(1);
+      d->push_back(1);
+      d->push_back(1);
+      d->push_back(1);
+      query.set_subarray(*d);
+      buffers.emplace_back(nullptr, std::move(d), nullptr);
+      break;
+    }
+    case TILEDB_UINT16: {
+      std::shared_ptr<std::vector<uint16_t>> d =
+          std::make_shared<std::vector<uint16_t>>();
+      d->push_back(1);
+      d->push_back(1);
+      d->push_back(1);
+      d->push_back(1);
+      query.set_subarray(*d);
+      buffers.emplace_back(nullptr, std::move(d), nullptr);
+      break;
+    }
+    case TILEDB_INT32: {
+      std::shared_ptr<std::vector<int32_t>> d =
+          std::make_shared<std::vector<int32_t>>();
+      d->push_back(1);
+      d->push_back(1);
+      d->push_back(1);
+      d->push_back(1);
+      query.set_subarray(*d);
+      buffers.emplace_back(nullptr, std::move(d), nullptr);
+      break;
+    }
+    case TILEDB_UINT32: {
+      std::shared_ptr<std::vector<uint32_t>> d =
+          std::make_shared<std::vector<uint32_t>>();
+      d->push_back(1);
+      d->push_back(1);
+      d->push_back(1);
+      d->push_back(1);
+      query.set_subarray(*d);
+      buffers.emplace_back(nullptr, std::move(d), nullptr);
+      break;
+    }
+    case TILEDB_INT64:
+    case TILEDB_DATETIME_YEAR:
+    case TILEDB_DATETIME_MONTH:
+    case TILEDB_DATETIME_WEEK:
+    case TILEDB_DATETIME_DAY:
+    case TILEDB_DATETIME_HR:
+    case TILEDB_DATETIME_MIN:
+    case TILEDB_DATETIME_SEC:
+    case TILEDB_DATETIME_MS:
+    case TILEDB_DATETIME_US:
+    case TILEDB_DATETIME_NS:
+    case TILEDB_DATETIME_PS:
+    case TILEDB_DATETIME_FS:
+    case TILEDB_DATETIME_AS: {
+      std::shared_ptr<std::vector<int64_t>> d =
+          std::make_shared<std::vector<int64_t>>();
+      d->push_back(1);
+      d->push_back(1);
+      d->push_back(1);
+      d->push_back(1);
+      query.set_subarray(*d);
+      buffers.emplace_back(nullptr, std::move(d), nullptr);
+      break;
+    }
+    case TILEDB_UINT64: {
+      std::shared_ptr<std::vector<uint64_t>> d =
+          std::make_shared<std::vector<uint64_t>>();
+      d->push_back(1);
+      d->push_back(1);
+      d->push_back(1);
+      d->push_back(1);
+      query.set_subarray(*d);
+      buffers.emplace_back(nullptr, std::move(d), nullptr);
+      break;
+    }
+    case TILEDB_FLOAT32: {
+      std::shared_ptr<std::vector<float>> d =
+          std::make_shared<std::vector<float>>();
+      d->push_back(1);
+      d->push_back(1);
+      d->push_back(1);
+      d->push_back(1);
+      query.set_subarray(*d);
+      buffers.emplace_back(nullptr, std::move(d), nullptr);
+      break;
+    }
+    case TILEDB_FLOAT64: {
+      std::shared_ptr<std::vector<double>> d =
+          std::make_shared<std::vector<double>>();
+      d->push_back(1);
+      d->push_back(1);
+      d->push_back(1);
+      d->push_back(1);
+      query.set_subarray(*d);
+      buffers.emplace_back(nullptr, std::move(d), nullptr);
+      break;
+    }
+    default: { assert(false); }
+  }
+
+  // Set the buffer for each attribute
+  for (const auto& attribute : array->schema().attributes()) {
+    auto buffer = addDataToQuery(
+        &query, attribute.first, attribute.second.type(),
+        attribute.second.variable_sized(), attribute.second.nullable());
+    buffers.push_back(std::move(buffer));
+  }
+  Query::Status status = query.submit();
+
   delete array;
   return status;
 }
@@ -654,11 +824,20 @@ bool build_homogeneous_arrays(const Context &ctx, const std::string &array_base,
     createArray(ctx, array_name.str(), array_type, datatype, datatype,
                 encryption_type);
     std::cout << "Created array " << array_name.str() << std::endl;
-    if (writeData(ctx, array_name.str(), datatype, datatype, encryption_type) !=
-        Query::Status::COMPLETE) {
-      std::cerr << "Writing data for " << array_name.str() << " failed!"
-                << std::endl;
-      return false;
+    if (array_type == tiledb_array_type_t::TILEDB_DENSE) {
+      if (write_data_dense(ctx, array_name.str(), datatype, encryption_type) !=
+          Query::Status::COMPLETE) {
+        std::cerr << "Writing data for " << array_name.str() << " failed!"
+                  << std::endl;
+        return false;
+      }
+    } else {
+      if (write_data_sparse(ctx, array_name.str(), datatype, datatype, encryption_type) !=
+          Query::Status::COMPLETE) {
+        std::cerr << "Writing data for " << array_name.str() << " failed!"
+                  << std::endl;
+        return false;
+      }
     }
     std::cout << "Wrote array " << array_name.str() << std::endl;
   }
@@ -700,8 +879,8 @@ bool build_heterogeneous_arrays(
       createArray(ctx, array_name.str(), array_type, dim1_type, dim2_type,
                   encryption_type);
       std::cout << "Created array " << array_name.str() << std::endl;
-      if (writeData(ctx, array_name.str(), dim1_type, dim2_type,
-                    encryption_type) != Query::Status::COMPLETE) {
+      if (write_data_sparse(ctx, array_name.str(), dim1_type, dim2_type,
+                            encryption_type) != Query::Status::COMPLETE) {
         std::cerr << "Writing data for " << array_name.str() << " failed!"
                   << std::endl;
         return false;
