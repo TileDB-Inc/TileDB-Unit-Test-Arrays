@@ -79,7 +79,11 @@ std::vector<tiledb_datatype_t> attribute_types = {
     TILEDB_DATETIME_MONTH, TILEDB_DATETIME_WEEK, TILEDB_DATETIME_DAY,
     TILEDB_DATETIME_HR,    TILEDB_DATETIME_MIN,  TILEDB_DATETIME_SEC,
     TILEDB_DATETIME_MS,    TILEDB_DATETIME_US,   TILEDB_DATETIME_NS,
-    TILEDB_DATETIME_PS,    TILEDB_DATETIME_FS,   TILEDB_DATETIME_AS};
+    TILEDB_DATETIME_PS,    TILEDB_DATETIME_FS,   TILEDB_DATETIME_AS,
+    TILEDB_BLOB,           TILEDB_TIME_HR,       TILEDB_TIME_MIN,
+    TILEDB_TIME_SEC,       TILEDB_TIME_MS,       TILEDB_TIME_US,
+    TILEDB_TIME_NS,        TILEDB_TIME_PS,       TILEDB_TIME_FS,
+    TILEDB_TIME_AS};
 
 // Filters to test
 std::vector<tiledb_filter_type_t> filters = {
@@ -373,7 +377,16 @@ Query::Status write_data_sparse(const Context &ctx,
     case TILEDB_DATETIME_NS:
     case TILEDB_DATETIME_PS:
     case TILEDB_DATETIME_FS:
-    case TILEDB_DATETIME_AS: {
+    case TILEDB_DATETIME_AS:
+    case TILEDB_TIME_HR:
+    case TILEDB_TIME_MIN:
+    case TILEDB_TIME_SEC:
+    case TILEDB_TIME_MS:
+    case TILEDB_TIME_US:
+    case TILEDB_TIME_NS:
+    case TILEDB_TIME_PS:
+    case TILEDB_TIME_FS:
+    case TILEDB_TIME_AS: {
       std::shared_ptr<std::vector<int64_t>> d =
           std::make_shared<std::vector<int64_t>>();
       d->push_back(1);
@@ -557,7 +570,16 @@ Query::Status write_data_dense(const Context &ctx,
   case TILEDB_DATETIME_NS:
   case TILEDB_DATETIME_PS:
   case TILEDB_DATETIME_FS:
-  case TILEDB_DATETIME_AS: {
+  case TILEDB_DATETIME_AS:
+  case TILEDB_TIME_HR:
+  case TILEDB_TIME_MIN:
+  case TILEDB_TIME_SEC:
+  case TILEDB_TIME_MS:
+  case TILEDB_TIME_US:
+  case TILEDB_TIME_NS:
+  case TILEDB_TIME_PS:
+  case TILEDB_TIME_FS:
+  case TILEDB_TIME_AS: {
     std::shared_ptr<std::vector<int64_t>> d =
         std::make_shared<std::vector<int64_t>>();
     d->push_back(1);
@@ -687,6 +709,14 @@ addDataToQuery(Query *query, std::string attributeName,
                               std::move(offsets), std::move(values),
                               std::move(validity));
   }
+  case TILEDB_BLOB: {
+    std::shared_ptr<std::vector<std::byte>> values =
+        std::make_shared<std::vector<std::byte>>();
+    values->push_back(std::byte(1));
+    return set_buffer_wrapper(query, attributeName, variableLength, nullable,
+                              std::move(offsets), std::move(values),
+                              std::move(validity));
+  }
   case TILEDB_UINT8: {
     std::shared_ptr<std::vector<uint8_t>> values =
         std::make_shared<std::vector<uint8_t>>();
@@ -740,7 +770,16 @@ addDataToQuery(Query *query, std::string attributeName,
   case TILEDB_DATETIME_NS:
   case TILEDB_DATETIME_PS:
   case TILEDB_DATETIME_FS:
-  case TILEDB_DATETIME_AS: {
+  case TILEDB_DATETIME_AS:
+  case TILEDB_TIME_HR:
+  case TILEDB_TIME_MIN:
+  case TILEDB_TIME_SEC:
+  case TILEDB_TIME_MS:
+  case TILEDB_TIME_US:
+  case TILEDB_TIME_NS:
+  case TILEDB_TIME_PS:
+  case TILEDB_TIME_FS:
+  case TILEDB_TIME_AS: {
     std::shared_ptr<std::vector<int64_t>> values =
         std::make_shared<std::vector<int64_t>>();
     values->push_back(1);
