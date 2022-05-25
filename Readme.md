@@ -1,6 +1,6 @@
 # TileDB Unit Test Arrays
 
-This repo contains arrays used for unit testing by TileDB. It also contains a helpful application `test_array_builer`
+This repo contains arrays used for unit testing by TileDB. It also contains a helpful application `test_array_builder`
 which can build new tiledb arrays based on a globally installed version of tiledb.
 
 ## Building New Arrays
