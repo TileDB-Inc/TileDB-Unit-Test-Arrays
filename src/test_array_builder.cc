@@ -946,6 +946,10 @@ int main() {
                               "_" + std::to_string(std::get<2>(tiledbVersion));
   std::string array_base = "arrays";
 
+  auto v = tiledb::version();
+  std::cout << "TileDB Version: " <<
+    std::get<0>(v) << "." << std::get<1>(v) << "." << std::get<2>(v) << std::endl;
+
   // Create a TileDB context.
   Context ctx;
   // Create a group based on the tiledb version
