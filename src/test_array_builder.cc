@@ -270,11 +270,8 @@ void createArray(const Context &ctx, const std::string &array_name,
   }
 
   // Create the (empty) array on disk.
-  if (encryption_type == TILEDB_NO_ENCRYPTION)
-    Array::create(array_name, schema);
-  else
-    Array::create(array_name, schema, encryption_type, encryption_key.c_str(),
-                  encryption_key.size() * sizeof(char));
+  // any encryption indicated in the config in the schema
+  Array::create(array_name, schema);
 }
 
 /**
@@ -296,9 +293,10 @@ Query::Status write_data_sparse(const Context &ctx,
   Array *array;
   if (encryption_type == TILEDB_NO_ENCRYPTION)
     array = new Array(ctx, array_name, TILEDB_WRITE);
-  else
-    array = new Array(ctx, array_name, TILEDB_WRITE, encryption_type,
-                      encryption_key);
+  else {
+    EncryptionAlgorithm enc_alg{encryption_type, encryption_key.c_str()};
+    array = new Array(ctx, array_name, TILEDB_WRITE, {}, enc_alg);
+  }
   Query query(ctx, *array, TILEDB_WRITE);
   query.set_layout(TILEDB_UNORDERED);
 
@@ -320,7 +318,7 @@ Query::Status write_data_sparse(const Context &ctx,
       std::shared_ptr<std::vector<int8_t>> d =
           std::make_shared<std::vector<int8_t>>();
       d->push_back(1);
-      query.set_buffer(dimension_name, *d);
+      query.set_data_buffer(dimension_name, *d);
       buffers.emplace_back(nullptr, std::move(d), nullptr);
       break;
     }
@@ -328,7 +326,7 @@ Query::Status write_data_sparse(const Context &ctx,
       std::shared_ptr<std::vector<uint8_t>> d =
           std::make_shared<std::vector<uint8_t>>();
       d->push_back(1);
-      query.set_buffer(dimension_name, *d);
+      query.set_data_buffer(dimension_name, *d);
       buffers.emplace_back(nullptr, std::move(d), nullptr);
       break;
     }
@@ -336,7 +334,7 @@ Query::Status write_data_sparse(const Context &ctx,
       std::shared_ptr<std::vector<int16_t>> d =
           std::make_shared<std::vector<int16_t>>();
       d->push_back(1);
-      query.set_buffer(dimension_name, *d);
+      query.set_data_buffer(dimension_name, *d);
       buffers.emplace_back(nullptr, std::move(d), nullptr);
       break;
     }
@@ -344,7 +342,7 @@ Query::Status write_data_sparse(const Context &ctx,
       std::shared_ptr<std::vector<uint16_t>> d =
           std::make_shared<std::vector<uint16_t>>();
       d->push_back(1);
-      query.set_buffer(dimension_name, *d);
+      query.set_data_buffer(dimension_name, *d);
       buffers.emplace_back(nullptr, std::move(d), nullptr);
       break;
     }
@@ -352,7 +350,7 @@ Query::Status write_data_sparse(const Context &ctx,
       std::shared_ptr<std::vector<int32_t>> d =
           std::make_shared<std::vector<int32_t>>();
       d->push_back(1);
-      query.set_buffer(dimension_name, *d);
+      query.set_data_buffer(dimension_name, *d);
       buffers.emplace_back(nullptr, std::move(d), nullptr);
       break;
     }
@@ -360,7 +358,7 @@ Query::Status write_data_sparse(const Context &ctx,
       std::shared_ptr<std::vector<uint32_t>> d =
           std::make_shared<std::vector<uint32_t>>();
       d->push_back(1);
-      query.set_buffer(dimension_name, *d);
+      query.set_data_buffer(dimension_name, *d);
       buffers.emplace_back(nullptr, std::move(d), nullptr);
       break;
     }
@@ -390,7 +388,7 @@ Query::Status write_data_sparse(const Context &ctx,
       std::shared_ptr<std::vector<int64_t>> d =
           std::make_shared<std::vector<int64_t>>();
       d->push_back(1);
-      query.set_buffer(dimension_name, *d);
+      query.set_data_buffer(dimension_name, *d);
       buffers.emplace_back(nullptr, std::move(d), nullptr);
       break;
     }
@@ -398,7 +396,7 @@ Query::Status write_data_sparse(const Context &ctx,
       std::shared_ptr<std::vector<uint64_t>> d =
           std::make_shared<std::vector<uint64_t>>();
       d->push_back(1);
-      query.set_buffer(dimension_name, *d);
+      query.set_data_buffer(dimension_name, *d);
       buffers.emplace_back(nullptr, std::move(d), nullptr);
       break;
     }
@@ -406,7 +404,7 @@ Query::Status write_data_sparse(const Context &ctx,
       std::shared_ptr<std::vector<float>> d =
           std::make_shared<std::vector<float>>();
       d->push_back(1);
-      query.set_buffer(dimension_name, *d);
+      query.set_data_buffer(dimension_name, *d);
       buffers.emplace_back(nullptr, std::move(d), nullptr);
       break;
     }
@@ -414,7 +412,7 @@ Query::Status write_data_sparse(const Context &ctx,
       std::shared_ptr<std::vector<double>> d =
           std::make_shared<std::vector<double>>();
       d->push_back(1);
-      query.set_buffer(dimension_name, *d);
+      query.set_data_buffer(dimension_name, *d);
       buffers.emplace_back(nullptr, std::move(d), nullptr);
       break;
     }
@@ -422,7 +420,7 @@ Query::Status write_data_sparse(const Context &ctx,
       std::shared_ptr<std::vector<char>> d =
           std::make_shared<std::vector<char>>();
       d->push_back('1');
-      query.set_buffer(dimension_name, *d);
+      query.set_data_buffer(dimension_name, *d);
       buffers.emplace_back(nullptr, std::move(d), nullptr);
       break;
     }
@@ -434,7 +432,8 @@ Query::Status write_data_sparse(const Context &ctx,
           std::unique_ptr<std::vector<uint64_t>>(new std::vector<uint64_t>);
       offsets->push_back(0);
 
-      query.set_buffer(dimension_name, *offsets, *d);
+      query.set_data_buffer(dimension_name, *d);
+      query.set_offsets_buffer(dimension_name, offsets->data(), offsets->size());
       buffers.emplace_back(std::move(offsets), std::move(d), nullptr);
       break;
     }
@@ -476,9 +475,10 @@ Query::Status write_data_dense(const Context &ctx,
   Array *array;
   if (encryption_type == TILEDB_NO_ENCRYPTION)
     array = new Array(ctx, array_name, TILEDB_WRITE);
-  else
-    array = new Array(ctx, array_name, TILEDB_WRITE, encryption_type,
-                      encryption_key);
+  else {
+    EncryptionAlgorithm enc_alg{ encryption_type, encryption_key.c_str() };
+    array = new Array(ctx, array_name, TILEDB_WRITE, {}, enc_alg);
+  }
   Query query(ctx, *array, TILEDB_WRITE);
   query.set_layout(TILEDB_ROW_MAJOR);
 
@@ -498,7 +498,9 @@ Query::Status write_data_dense(const Context &ctx,
     d->push_back(1);
     d->push_back(1);
     d->push_back(1);
-    query.set_subarray(*d);
+    Subarray subarray(ctx, *array);
+    subarray.set_subarray(*d);
+    query.set_subarray(subarray);
     buffers.emplace_back(nullptr, std::move(d), nullptr);
     break;
   }
@@ -509,7 +511,9 @@ Query::Status write_data_dense(const Context &ctx,
     d->push_back(1);
     d->push_back(1);
     d->push_back(1);
-    query.set_subarray(*d);
+    Subarray subarray(ctx, *array);
+    subarray.set_subarray(*d);
+    query.set_subarray(subarray);
     buffers.emplace_back(nullptr, std::move(d), nullptr);
     break;
   }
@@ -520,7 +524,9 @@ Query::Status write_data_dense(const Context &ctx,
     d->push_back(1);
     d->push_back(1);
     d->push_back(1);
-    query.set_subarray(*d);
+    Subarray subarray(ctx, *array);
+    subarray.set_subarray(*d);
+    query.set_subarray(subarray);
     buffers.emplace_back(nullptr, std::move(d), nullptr);
     break;
   }
@@ -531,7 +537,9 @@ Query::Status write_data_dense(const Context &ctx,
     d->push_back(1);
     d->push_back(1);
     d->push_back(1);
-    query.set_subarray(*d);
+    Subarray subarray(ctx, *array);
+    subarray.set_subarray(*d);
+    query.set_subarray(subarray);
     buffers.emplace_back(nullptr, std::move(d), nullptr);
     break;
   }
@@ -542,7 +550,9 @@ Query::Status write_data_dense(const Context &ctx,
     d->push_back(1);
     d->push_back(1);
     d->push_back(1);
-    query.set_subarray(*d);
+    Subarray subarray(ctx, *array);
+    subarray.set_subarray(*d);
+    query.set_subarray(subarray);
     buffers.emplace_back(nullptr, std::move(d), nullptr);
     break;
   }
@@ -553,7 +563,9 @@ Query::Status write_data_dense(const Context &ctx,
     d->push_back(1);
     d->push_back(1);
     d->push_back(1);
-    query.set_subarray(*d);
+    Subarray subarray(ctx, *array);
+    subarray.set_subarray(*d);
+    query.set_subarray(subarray);
     buffers.emplace_back(nullptr, std::move(d), nullptr);
     break;
   }
@@ -586,7 +598,9 @@ Query::Status write_data_dense(const Context &ctx,
     d->push_back(1);
     d->push_back(1);
     d->push_back(1);
-    query.set_subarray(*d);
+    Subarray subarray(ctx, *array);
+    subarray.set_subarray(*d);
+    query.set_subarray(subarray);
     buffers.emplace_back(nullptr, std::move(d), nullptr);
     break;
   }
@@ -597,7 +611,9 @@ Query::Status write_data_dense(const Context &ctx,
     d->push_back(1);
     d->push_back(1);
     d->push_back(1);
-    query.set_subarray(*d);
+    Subarray subarray(ctx, *array);
+    subarray.set_subarray(*d);
+    query.set_subarray(subarray);
     buffers.emplace_back(nullptr, std::move(d), nullptr);
     break;
   }
@@ -608,7 +624,9 @@ Query::Status write_data_dense(const Context &ctx,
     d->push_back(1);
     d->push_back(1);
     d->push_back(1);
-    query.set_subarray(*d);
+    Subarray subarray(ctx, *array);
+    subarray.set_subarray(*d);
+    query.set_subarray(subarray);
     buffers.emplace_back(nullptr, std::move(d), nullptr);
     break;
   }
@@ -619,7 +637,9 @@ Query::Status write_data_dense(const Context &ctx,
     d->push_back(1);
     d->push_back(1);
     d->push_back(1);
-    query.set_subarray(*d);
+    Subarray subarray(ctx, *array);
+    subarray.set_subarray(*d);
+    query.set_subarray(subarray);
     buffers.emplace_back(nullptr, std::move(d), nullptr);
     break;
   }
@@ -664,15 +684,19 @@ set_buffer_wrapper(Query *query, const std::string &attributeName,
 
   if (variableLength) {
     if (!nullable) {
-      query->set_buffer(attributeName, *offsets, *values);
+      query->set_data_buffer(attributeName, *values);
+      query->set_offsets_buffer(attributeName, *offsets);
     } else {
-      query->set_buffer_nullable(attributeName, *offsets, *values, *validity);
+      query->set_data_buffer(attributeName, *values);
+      query->set_offsets_buffer(attributeName, offsets->data(), offsets->size());
+      query->set_validity_buffer(attributeName, validity->data(), validity->size());
     }
   } else {
     if (!nullable) {
-      query->set_buffer(attributeName, *values);
+      query->set_data_buffer(attributeName, *values);
     } else {
-      query->set_buffer_nullable(attributeName, *values, *validity);
+      query->set_data_buffer(attributeName, *values);
+      query->set_validity_buffer(attributeName, validity->data(), validity->size());
     }
   }
 
@@ -965,10 +989,24 @@ int main() {
   // Build an array for each array type
   for (auto array_type : array_types) {
     for (auto encryption_type : encryption_types) {
-      if (!build_homogeneous_arrays(ctx, array_base, version, array_type,
+      auto encryption_type_str = [](decltype(encryption_type) encryption_type)->std::string {
+      switch (encryption_type) {
+      case TILEDB_NO_ENCRYPTION:
+        return "NO_ENCRYPTION";
+      case TILEDB_AES_256_GCM:
+        return "AES_256_GCM";
+      default:
+        return "";
+      }
+      };
+      tiledb::Config cfg;
+      cfg["sm.encryption_type"] = encryption_type_str(encryption_type);
+      cfg["sm.encryption_key"] = encryption_key;
+      Context ctx_with_encr(cfg);
+      if (!build_homogeneous_arrays(ctx_with_encr, array_base, version, array_type,
                                     encryption_type))
         return 1;
-      if (!build_heterogeneous_arrays(ctx, array_base, version, array_type,
+      if (!build_heterogeneous_arrays(ctx_with_encr, array_base, version, array_type,
                                       encryption_type))
         return 1;
     }
