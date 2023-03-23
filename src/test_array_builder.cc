@@ -33,6 +33,7 @@
  */
 
 #include <tiledb/tiledb>
+#include <tiledb/tiledb_experimental>
 
 using namespace tiledb;
 
@@ -433,7 +434,8 @@ Query::Status write_data_sparse(const Context &ctx,
       offsets->push_back(0);
 
       query.set_data_buffer(dimension_name, *d);
-      query.set_offsets_buffer(dimension_name, offsets->data(), offsets->size());
+      query.set_offsets_buffer(dimension_name, offsets->data(),
+                               offsets->size());
       buffers.emplace_back(std::move(offsets), std::move(d), nullptr);
       break;
     }
@@ -476,7 +478,7 @@ Query::Status write_data_dense(const Context &ctx,
   if (encryption_type == TILEDB_NO_ENCRYPTION)
     array = new Array(ctx, array_name, TILEDB_WRITE);
   else {
-    EncryptionAlgorithm enc_alg{ encryption_type, encryption_key.c_str() };
+    EncryptionAlgorithm enc_alg{encryption_type, encryption_key.c_str()};
     array = new Array(ctx, array_name, TILEDB_WRITE, {}, enc_alg);
   }
   Query query(ctx, *array, TILEDB_WRITE);
@@ -688,15 +690,18 @@ set_buffer_wrapper(Query *query, const std::string &attributeName,
       query->set_offsets_buffer(attributeName, *offsets);
     } else {
       query->set_data_buffer(attributeName, *values);
-      query->set_offsets_buffer(attributeName, offsets->data(), offsets->size());
-      query->set_validity_buffer(attributeName, validity->data(), validity->size());
+      query->set_offsets_buffer(attributeName, offsets->data(),
+                                offsets->size());
+      query->set_validity_buffer(attributeName, validity->data(),
+                                 validity->size());
     }
   } else {
     if (!nullable) {
       query->set_data_buffer(attributeName, *values);
     } else {
       query->set_data_buffer(attributeName, *values);
-      query->set_validity_buffer(attributeName, validity->data(), validity->size());
+      query->set_validity_buffer(attributeName, validity->data(),
+                                 validity->size());
     }
   }
 
@@ -971,25 +976,27 @@ int main() {
   std::string array_base = "arrays";
 
   auto v = tiledb::version();
-  std::cout << "TileDB Version: " <<
-    std::get<0>(v) << "." << std::get<1>(v) << "." << std::get<2>(v) << std::endl;
+  std::cout << "TileDB Version: " << std::get<0>(v) << "." << std::get<1>(v)
+            << "." << std::get<2>(v) << std::endl;
 
-  // Create a TileDB context.
-  Context ctx;
-  // Create a group based on the tiledb version
-  if (Object::object(ctx, array_base).type() != Object::Type::Group) {
-    create_group(ctx, array_base);
-  }
-  // Create a group based on the tiledb version
-  array_base += "/" + version;
-  if (Object::object(ctx, array_base).type() != Object::Type::Group) {
-    create_group(ctx, array_base);
+  {
+    // Create a TileDB context.
+    Context ctx;
+    // Create a group based on the tiledb version
+    if (Object::object(ctx, array_base).type() != Object::Type::Group) {
+      create_group(ctx, array_base);
+    }
+    // Create a group based on the tiledb version
+    array_base += "/" + version;
+    if (Object::object(ctx, array_base).type() != Object::Type::Group) {
+      create_group(ctx, array_base);
+    }
   }
 
   // Build an array for each array type
-  for (auto array_type : array_types) {
-    for (auto encryption_type : encryption_types) {
-      auto encryption_type_str = [](decltype(encryption_type) encryption_type)->std::string {
+  for (auto encryption_type : encryption_types) {
+    auto encryption_type_str =
+        [](decltype(encryption_type) encryption_type) -> std::string {
       switch (encryption_type) {
       case TILEDB_NO_ENCRYPTION:
         return "NO_ENCRYPTION";
@@ -998,16 +1005,17 @@ int main() {
       default:
         return "";
       }
-      };
-      tiledb::Config cfg;
-      cfg["sm.encryption_type"] = encryption_type_str(encryption_type);
-      cfg["sm.encryption_key"] = encryption_key;
-      Context ctx_with_encr(cfg);
-      if (!build_homogeneous_arrays(ctx_with_encr, array_base, version, array_type,
-                                    encryption_type))
+    };
+    tiledb::Config cfg;
+    cfg["sm.encryption_type"] = encryption_type_str(encryption_type);
+    cfg["sm.encryption_key"] = encryption_key;
+    Context ctx(cfg);
+    for (auto array_type : array_types) {
+      if (!build_homogeneous_arrays(ctx, array_base, version,
+                                    array_type, encryption_type))
         return 1;
-      if (!build_heterogeneous_arrays(ctx_with_encr, array_base, version, array_type,
-                                      encryption_type))
+      if (!build_heterogeneous_arrays(ctx, array_base, version,
+                                      array_type, encryption_type))
         return 1;
     }
   }
