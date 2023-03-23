@@ -33,7 +33,6 @@
  */
 
 #include <tiledb/tiledb>
-#include <tiledb/tiledb_experimental>
 
 using namespace tiledb;
 
