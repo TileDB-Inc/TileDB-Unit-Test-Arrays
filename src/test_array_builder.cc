@@ -955,13 +955,20 @@ void put_metadata(Group &g, const std::string &key,
   g.put_metadata(key + "_multi", datatype, values.size(), values.data());
 };
 
-void build_group(const Context &ctx, const std::string &group_base) {
+void build_group(Context &ctx, const std::string &group_base) {
   Group g{ctx, group_base, tiledb_query_type_t::TILEDB_WRITE};
 
   put_metadata<uint8_t>(g, "u8", TILEDB_UINT8, 77);
   put_metadata<uint16_t>(g, "u16", TILEDB_UINT16, 777);
   put_metadata<uint32_t>(g, "u32", TILEDB_UINT32, 77777);
   put_metadata<uint64_t>(g, "u64", TILEDB_UINT64, 7777777777);
+
+  for (const auto& object : ObjectIter(ctx, group_base)) {
+    if (object.type() != Object::Type::Array) {
+      continue;
+    }
+    g.add_member(object.uri(), false);
+  }
 }
 
 int main() {
@@ -987,7 +994,6 @@ int main() {
     if (Object::object(ctx, array_base).type() != Object::Type::Group) {
       create_group(ctx, array_base);
     }
-    build_group(ctx, array_base);
   }
 
   // Build an array for each array type
@@ -1007,6 +1013,9 @@ int main() {
         return 1;
     }
   }
+
+  Context ctx;
+  build_group(ctx, array_base);
 
   return 0;
 }
