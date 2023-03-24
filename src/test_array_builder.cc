@@ -429,7 +429,7 @@ Query::Status write_data_sparse(const Context &ctx,
           std::make_shared<std::vector<char>>();
       d->push_back('1');
       std::unique_ptr<std::vector<uint64_t>> offsets =
-          std::unique_ptr<std::vector<uint64_t>>(new std::vector<uint64_t>);
+          std::make_unique<std::vector<uint64_t>>();
       offsets->push_back(0);
 
       query.set_data_buffer(dimension_name, *d);
@@ -721,11 +721,11 @@ std::tuple<std::unique_ptr<std::vector<uint64_t>>, std::shared_ptr<void>,
 addDataToQuery(Query *query, std::string attributeName,
                tiledb_datatype_t datatype, bool variableLength, bool nullable) {
   std::unique_ptr<std::vector<uint64_t>> offsets =
-      std::unique_ptr<std::vector<uint64_t>>(new std::vector<uint64_t>);
+      std::make_unique<std::vector<uint64_t>>();
   offsets->push_back(0);
 
   std::unique_ptr<std::vector<uint8_t>> validity =
-      std::unique_ptr<std::vector<uint8_t>>(new std::vector<uint8_t>);
+      std::make_unique<std::vector<uint8_t>>();
   validity->push_back(1);
 
   switch (datatype) {
