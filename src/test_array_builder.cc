@@ -137,13 +137,11 @@ addDataToQuery(Query *query, std::string attributeName,
  * @param array_type
  * @param dimension_1_type
  * @param dimension_2_type
- * @param encryption_type
  */
 void createArray(const Context &ctx, const std::string &array_name,
                  tiledb_array_type_t array_type,
                  tiledb_datatype_t dimension_1_type,
-                 tiledb_datatype_t dimension_2_type,
-                 tiledb_encryption_type_t encryption_type) {
+                 tiledb_datatype_t dimension_2_type) {
   Domain domain(ctx);
 
   // Build two dimensions rows and columns with domains [1,4]
@@ -281,23 +279,14 @@ void createArray(const Context &ctx, const std::string &array_name,
  * @param array_name
  * @param dimension_1_type
  * @param dimension_2_type
- * @param encryption_type
  * @return
  */
 Query::Status write_data_sparse(const Context &ctx,
                                 const std::string &array_name,
                                 tiledb_datatype_t dimension_1_type,
-                                tiledb_datatype_t dimension_2_type,
-                                tiledb_encryption_type_t encryption_type) {
-
-  Array *array;
-  if (encryption_type == TILEDB_NO_ENCRYPTION)
-    array = new Array(ctx, array_name, TILEDB_WRITE);
-  else {
-    EncryptionAlgorithm enc_alg{encryption_type, encryption_key.c_str()};
-    array = new Array(ctx, array_name, TILEDB_WRITE, {}, enc_alg);
-  }
-  Query query(ctx, *array, TILEDB_WRITE);
+                                tiledb_datatype_t dimension_2_type) {
+  Array array(ctx, array_name, TILEDB_WRITE);
+  Query query(ctx, array, TILEDB_WRITE);
   query.set_layout(TILEDB_UNORDERED);
 
   // Hold a reference to the buffers so they exists until we are finished
@@ -429,11 +418,12 @@ Query::Status write_data_sparse(const Context &ctx,
           std::make_shared<std::vector<char>>();
       d->push_back('1');
       std::unique_ptr<std::vector<uint64_t>> offsets =
-          std::unique_ptr<std::vector<uint64_t>>(new std::vector<uint64_t>);
+          std::make_unique<std::vector<uint64_t>>();
       offsets->push_back(0);
 
       query.set_data_buffer(dimension_name, *d);
-      query.set_offsets_buffer(dimension_name, offsets->data(), offsets->size());
+      query.set_offsets_buffer(dimension_name, offsets->data(),
+                               offsets->size());
       buffers.emplace_back(std::move(offsets), std::move(d), nullptr);
       break;
     }
@@ -444,7 +434,7 @@ Query::Status write_data_sparse(const Context &ctx,
   }
 
   // Set the buffer for each attribute
-  for (auto attribute : array->schema().attributes()) {
+  for (auto attribute : array.schema().attributes()) {
     auto buffer = addDataToQuery(
         &query, attribute.first, attribute.second.type(),
         attribute.second.variable_sized(), attribute.second.nullable());
@@ -454,7 +444,6 @@ Query::Status write_data_sparse(const Context &ctx,
 
   // Finalize the query since we are doing unordered writes
   query.finalize();
-  delete array;
   return status;
 }
 
@@ -464,22 +453,14 @@ Query::Status write_data_sparse(const Context &ctx,
  * @param ctx
  * @param array_name
  * @param domain_type
- * @param encryption_type
  * @return
  */
 Query::Status write_data_dense(const Context &ctx,
                                const std::string &array_name,
-                               tiledb_datatype_t domain_type,
-                               tiledb_encryption_type_t encryption_type) {
+                               tiledb_datatype_t domain_type) {
 
-  Array *array;
-  if (encryption_type == TILEDB_NO_ENCRYPTION)
-    array = new Array(ctx, array_name, TILEDB_WRITE);
-  else {
-    EncryptionAlgorithm enc_alg{ encryption_type, encryption_key.c_str() };
-    array = new Array(ctx, array_name, TILEDB_WRITE, {}, enc_alg);
-  }
-  Query query(ctx, *array, TILEDB_WRITE);
+  Array array(ctx, array_name, TILEDB_WRITE);
+  Query query(ctx, array, TILEDB_WRITE);
   query.set_layout(TILEDB_ROW_MAJOR);
 
   // Hold a reference to the buffers so they exists until we are finished
@@ -498,7 +479,7 @@ Query::Status write_data_dense(const Context &ctx,
     d->push_back(1);
     d->push_back(1);
     d->push_back(1);
-    Subarray subarray(ctx, *array);
+    Subarray subarray(ctx, array);
     subarray.set_subarray(*d);
     query.set_subarray(subarray);
     buffers.emplace_back(nullptr, std::move(d), nullptr);
@@ -511,7 +492,7 @@ Query::Status write_data_dense(const Context &ctx,
     d->push_back(1);
     d->push_back(1);
     d->push_back(1);
-    Subarray subarray(ctx, *array);
+    Subarray subarray(ctx, array);
     subarray.set_subarray(*d);
     query.set_subarray(subarray);
     buffers.emplace_back(nullptr, std::move(d), nullptr);
@@ -524,7 +505,7 @@ Query::Status write_data_dense(const Context &ctx,
     d->push_back(1);
     d->push_back(1);
     d->push_back(1);
-    Subarray subarray(ctx, *array);
+    Subarray subarray(ctx, array);
     subarray.set_subarray(*d);
     query.set_subarray(subarray);
     buffers.emplace_back(nullptr, std::move(d), nullptr);
@@ -537,7 +518,7 @@ Query::Status write_data_dense(const Context &ctx,
     d->push_back(1);
     d->push_back(1);
     d->push_back(1);
-    Subarray subarray(ctx, *array);
+    Subarray subarray(ctx, array);
     subarray.set_subarray(*d);
     query.set_subarray(subarray);
     buffers.emplace_back(nullptr, std::move(d), nullptr);
@@ -550,7 +531,7 @@ Query::Status write_data_dense(const Context &ctx,
     d->push_back(1);
     d->push_back(1);
     d->push_back(1);
-    Subarray subarray(ctx, *array);
+    Subarray subarray(ctx, array);
     subarray.set_subarray(*d);
     query.set_subarray(subarray);
     buffers.emplace_back(nullptr, std::move(d), nullptr);
@@ -563,7 +544,7 @@ Query::Status write_data_dense(const Context &ctx,
     d->push_back(1);
     d->push_back(1);
     d->push_back(1);
-    Subarray subarray(ctx, *array);
+    Subarray subarray(ctx, array);
     subarray.set_subarray(*d);
     query.set_subarray(subarray);
     buffers.emplace_back(nullptr, std::move(d), nullptr);
@@ -598,7 +579,7 @@ Query::Status write_data_dense(const Context &ctx,
     d->push_back(1);
     d->push_back(1);
     d->push_back(1);
-    Subarray subarray(ctx, *array);
+    Subarray subarray(ctx, array);
     subarray.set_subarray(*d);
     query.set_subarray(subarray);
     buffers.emplace_back(nullptr, std::move(d), nullptr);
@@ -611,7 +592,7 @@ Query::Status write_data_dense(const Context &ctx,
     d->push_back(1);
     d->push_back(1);
     d->push_back(1);
-    Subarray subarray(ctx, *array);
+    Subarray subarray(ctx, array);
     subarray.set_subarray(*d);
     query.set_subarray(subarray);
     buffers.emplace_back(nullptr, std::move(d), nullptr);
@@ -624,7 +605,7 @@ Query::Status write_data_dense(const Context &ctx,
     d->push_back(1);
     d->push_back(1);
     d->push_back(1);
-    Subarray subarray(ctx, *array);
+    Subarray subarray(ctx, array);
     subarray.set_subarray(*d);
     query.set_subarray(subarray);
     buffers.emplace_back(nullptr, std::move(d), nullptr);
@@ -637,7 +618,7 @@ Query::Status write_data_dense(const Context &ctx,
     d->push_back(1);
     d->push_back(1);
     d->push_back(1);
-    Subarray subarray(ctx, *array);
+    Subarray subarray(ctx, array);
     subarray.set_subarray(*d);
     query.set_subarray(subarray);
     buffers.emplace_back(nullptr, std::move(d), nullptr);
@@ -649,7 +630,7 @@ Query::Status write_data_dense(const Context &ctx,
   }
 
   // Set the buffer for each attribute
-  for (const auto &attribute : array->schema().attributes()) {
+  for (const auto &attribute : array.schema().attributes()) {
     auto buffer = addDataToQuery(
         &query, attribute.first, attribute.second.type(),
         attribute.second.variable_sized(), attribute.second.nullable());
@@ -657,7 +638,6 @@ Query::Status write_data_dense(const Context &ctx,
   }
   Query::Status status = query.submit();
 
-  delete array;
   return status;
 }
 
@@ -688,15 +668,18 @@ set_buffer_wrapper(Query *query, const std::string &attributeName,
       query->set_offsets_buffer(attributeName, *offsets);
     } else {
       query->set_data_buffer(attributeName, *values);
-      query->set_offsets_buffer(attributeName, offsets->data(), offsets->size());
-      query->set_validity_buffer(attributeName, validity->data(), validity->size());
+      query->set_offsets_buffer(attributeName, offsets->data(),
+                                offsets->size());
+      query->set_validity_buffer(attributeName, validity->data(),
+                                 validity->size());
     }
   } else {
     if (!nullable) {
       query->set_data_buffer(attributeName, *values);
     } else {
       query->set_data_buffer(attributeName, *values);
-      query->set_validity_buffer(attributeName, validity->data(), validity->size());
+      query->set_validity_buffer(attributeName, validity->data(),
+                                 validity->size());
     }
   }
 
@@ -717,11 +700,11 @@ std::tuple<std::unique_ptr<std::vector<uint64_t>>, std::shared_ptr<void>,
 addDataToQuery(Query *query, std::string attributeName,
                tiledb_datatype_t datatype, bool variableLength, bool nullable) {
   std::unique_ptr<std::vector<uint64_t>> offsets =
-      std::unique_ptr<std::vector<uint64_t>>(new std::vector<uint64_t>);
+      std::make_unique<std::vector<uint64_t>>();
   offsets->push_back(0);
 
   std::unique_ptr<std::vector<uint8_t>> validity =
-      std::unique_ptr<std::vector<uint8_t>>(new std::vector<uint8_t>);
+      std::make_unique<std::vector<uint8_t>>();
   validity->push_back(1);
 
   switch (datatype) {
@@ -892,19 +875,18 @@ bool build_homogeneous_arrays(const Context &ctx, const std::string &array_base,
     }
 
     std::cout << "Creating array " << array_name.str() << std::endl;
-    createArray(ctx, array_name.str(), array_type, datatype, datatype,
-                encryption_type);
+    createArray(ctx, array_name.str(), array_type, datatype, datatype);
     std::cout << "Created array " << array_name.str() << std::endl;
     if (array_type == tiledb_array_type_t::TILEDB_DENSE) {
-      if (write_data_dense(ctx, array_name.str(), datatype, encryption_type) !=
+      if (write_data_dense(ctx, array_name.str(), datatype) !=
           Query::Status::COMPLETE) {
         std::cerr << "Writing data for " << array_name.str() << " failed!"
                   << std::endl;
         return false;
       }
     } else {
-      if (write_data_sparse(ctx, array_name.str(), datatype, datatype,
-                            encryption_type) != Query::Status::COMPLETE) {
+      if (write_data_sparse(ctx, array_name.str(), datatype, datatype) !=
+          Query::Status::COMPLETE) {
         std::cerr << "Writing data for " << array_name.str() << " failed!"
                   << std::endl;
         return false;
@@ -947,11 +929,10 @@ bool build_heterogeneous_arrays(
       }
 
       std::cout << "Creating array " << array_name.str() << std::endl;
-      createArray(ctx, array_name.str(), array_type, dim1_type, dim2_type,
-                  encryption_type);
+      createArray(ctx, array_name.str(), array_type, dim1_type, dim2_type);
       std::cout << "Created array " << array_name.str() << std::endl;
-      if (write_data_sparse(ctx, array_name.str(), dim1_type, dim2_type,
-                            encryption_type) != Query::Status::COMPLETE) {
+      if (write_data_sparse(ctx, array_name.str(), dim1_type, dim2_type) !=
+          Query::Status::COMPLETE) {
         std::cerr << "Writing data for " << array_name.str() << " failed!"
                   << std::endl;
         return false;
@@ -971,43 +952,37 @@ int main() {
   std::string array_base = "arrays";
 
   auto v = tiledb::version();
-  std::cout << "TileDB Version: " <<
-    std::get<0>(v) << "." << std::get<1>(v) << "." << std::get<2>(v) << std::endl;
+  std::cout << "TileDB Version: " << std::get<0>(v) << "." << std::get<1>(v)
+            << "." << std::get<2>(v) << std::endl;
 
-  // Create a TileDB context.
-  Context ctx;
-  // Create a group based on the tiledb version
-  if (Object::object(ctx, array_base).type() != Object::Type::Group) {
-    create_group(ctx, array_base);
-  }
-  // Create a group based on the tiledb version
-  array_base += "/" + version;
-  if (Object::object(ctx, array_base).type() != Object::Type::Group) {
-    create_group(ctx, array_base);
+  {
+    // Create a TileDB context.
+    Context ctx;
+    // Create a group based on the tiledb version
+    if (Object::object(ctx, array_base).type() != Object::Type::Group) {
+      create_group(ctx, array_base);
+    }
+    // Create a group based on the tiledb version
+    array_base += "/" + version;
+    if (Object::object(ctx, array_base).type() != Object::Type::Group) {
+      create_group(ctx, array_base);
+    }
   }
 
   // Build an array for each array type
-  for (auto array_type : array_types) {
-    for (auto encryption_type : encryption_types) {
-      auto encryption_type_str = [](decltype(encryption_type) encryption_type)->std::string {
-      switch (encryption_type) {
-      case TILEDB_NO_ENCRYPTION:
-        return "NO_ENCRYPTION";
-      case TILEDB_AES_256_GCM:
-        return "AES_256_GCM";
-      default:
-        return "";
-      }
-      };
-      tiledb::Config cfg;
-      cfg["sm.encryption_type"] = encryption_type_str(encryption_type);
+  for (auto encryption_type : encryption_types) {
+    tiledb::Config cfg;
+    if (encryption_type == TILEDB_AES_256_GCM) {
+      cfg["sm.encryption_type"] = "AES_256_GCM";
       cfg["sm.encryption_key"] = encryption_key;
-      Context ctx_with_encr(cfg);
-      if (!build_homogeneous_arrays(ctx_with_encr, array_base, version, array_type,
-                                    encryption_type))
+    }
+    Context ctx(cfg);
+    for (auto array_type : array_types) {
+      if (!build_homogeneous_arrays(ctx, array_base, version,
+                                    array_type, encryption_type))
         return 1;
-      if (!build_heterogeneous_arrays(ctx_with_encr, array_base, version, array_type,
-                                      encryption_type))
+      if (!build_heterogeneous_arrays(ctx, array_base, version,
+                                      array_type, encryption_type))
         return 1;
     }
   }
