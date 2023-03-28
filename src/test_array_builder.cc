@@ -952,7 +952,7 @@ void put_metadata(Group &g, const std::string &key,
 
   std::vector<T> values(7);
   std::fill(values.begin(), values.end(), value);
-  g.put_metadata(key + "_multi", datatype, values.size(), values.data());
+  g.put_metadata(key + "_multi", datatype, static_cast<uint32_t>(values.size()), values.data());
 };
 
 void build_group(Context &ctx, const std::string &group_base) {
