@@ -33,6 +33,7 @@
  */
 
 #include <tiledb/tiledb>
+#include <tiledb/tiledb_experimental>
 
 using namespace tiledb;
 
@@ -944,6 +945,42 @@ bool build_heterogeneous_arrays(
   return true;
 }
 
+void put_metadata(Group& g, const std::string& key, const std::string& value)
+{
+    g.put_metadata(key, TILEDB_STRING_ASCII, static_cast<uint32_t>(value.size()), value.data());
+}
+
+template <class T>
+void put_metadata(Group &g, const std::string &key,
+                  tiledb_datatype_t datatype, T value) {
+  g.put_metadata(key, datatype, static_cast<uint32_t>(sizeof(T)), &value);
+
+  std::array<T, 7> values;
+  std::fill(values.begin(), values.end(), value);
+  g.put_metadata(key + "_multi", datatype, static_cast<uint32_t>(sizeof(T) * values.size()), values.data());
+};
+
+void build_group(Context &ctx, const std::string &group_base) {
+  Group g{ctx, group_base, tiledb_query_type_t::TILEDB_WRITE};
+
+  put_metadata<bool>(g, "bool", TILEDB_BOOL, true);
+  put_metadata<uint8_t>(g, "u8", TILEDB_UINT8, 0x77);
+  put_metadata<uint16_t>(g, "u16", TILEDB_UINT16, 0x7777);
+  put_metadata<uint32_t>(g, "u32", TILEDB_UINT32, 0x77777777);
+  put_metadata<uint64_t>(g, "u64", TILEDB_UINT64, 0x7777777777777777);
+  put_metadata(g, "str", "77777");
+
+  for (const auto& object : ObjectIter(ctx, group_base)) {
+    if (object.type() != Object::Type::Array) {
+      continue;
+    }
+    g.add_member(object.uri(), false);
+  }
+
+  create_group(ctx, group_base + "/nested_group");
+  g.add_member("nested_group", true, "nested");
+}
+
 int main() {
   const std::tuple<int, int, int> &tiledbVersion = version();
   const std::string version = "v" + std::to_string(std::get<0>(tiledbVersion)) +
@@ -986,6 +1023,9 @@ int main() {
         return 1;
     }
   }
+
+  Context ctx;
+  build_group(ctx, array_base);
 
   return 0;
 }
