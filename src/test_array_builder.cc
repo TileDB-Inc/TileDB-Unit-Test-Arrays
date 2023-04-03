@@ -953,11 +953,11 @@ void put_metadata(Group& g, const std::string& key, const std::string& value)
 template <class T>
 void put_metadata(Group &g, const std::string &key,
                   tiledb_datatype_t datatype, T value) {
-  g.put_metadata(key, datatype, 1, &value);
+  g.put_metadata(key, datatype, static_cast<uint32_t>(sizeof(T)), &value);
 
   std::array<T, 7> values;
   std::fill(values.begin(), values.end(), value);
-  g.put_metadata(key + "_multi", datatype, static_cast<uint32_t>(values.size()), values.data());
+  g.put_metadata(key + "_multi", datatype, static_cast<uint32_t>(sizeof(T) * values.size()), values.data());
 };
 
 void build_group(Context &ctx, const std::string &group_base) {
