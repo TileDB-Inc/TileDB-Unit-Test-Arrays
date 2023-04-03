@@ -964,10 +964,10 @@ void build_group(Context &ctx, const std::string &group_base) {
   Group g{ctx, group_base, tiledb_query_type_t::TILEDB_WRITE};
 
   put_metadata<bool>(g, "bool", TILEDB_BOOL, true);
-  put_metadata<uint8_t>(g, "u8", TILEDB_UINT8, 77);
-  put_metadata<uint16_t>(g, "u16", TILEDB_UINT16, 777);
-  put_metadata<uint32_t>(g, "u32", TILEDB_UINT32, 77777);
-  put_metadata<uint64_t>(g, "u64", TILEDB_UINT64, 7777777777);
+  put_metadata<uint8_t>(g, "u8", TILEDB_UINT8, 0x77);
+  put_metadata<uint16_t>(g, "u16", TILEDB_UINT16, 0x7777);
+  put_metadata<uint32_t>(g, "u32", TILEDB_UINT32, 0x77777777);
+  put_metadata<uint64_t>(g, "u64", TILEDB_UINT64, 0x7777777777777777);
   put_metadata(g, "str", "77777");
 
   for (const auto& object : ObjectIter(ctx, group_base)) {
