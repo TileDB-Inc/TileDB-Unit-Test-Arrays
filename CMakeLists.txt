@@ -26,13 +26,14 @@
 # THE SOFTWARE.
 #
 
+cmake_minimum_required(VERSION 3.3)
+
 # By TileDB 2.13, need
 # Set C++17 as required standard for all C++ targets.
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 project("TileDBUnitTestArrays")
-cmake_minimum_required(VERSION 3.3)
 find_package(TileDB REQUIRED)
 add_executable(test_array_builder src/test_array_builder.cc)
 target_link_libraries(test_array_builder TileDB::tiledb_shared)
