@@ -980,6 +980,8 @@ void build_group(Context &ctx, const std::string &group_base) {
 
   create_group(ctx, group_base + "/nested_group");
   g.add_member("nested_group", true, "nested");
+
+  g.close();
 }
 
 int main() {
