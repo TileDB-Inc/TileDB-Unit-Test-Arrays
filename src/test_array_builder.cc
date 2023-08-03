@@ -105,12 +105,14 @@ std::vector<tiledb_encryption_type_t> encryption_types = {TILEDB_NO_ENCRYPTION,
                                                           TILEDB_AES_256_GCM};
 
 /**
- * Helper function to check of a given datatype can use the double delta filter
+ * Helper function to check if a given datatype can use the double delta filter
  * @param datatype
  * @return
  */
 bool doubleDeltaCapable(tiledb_datatype_t datatype) {
   switch (datatype) {
+  case TILEDB_BLOB:
+  case TILEDB_BOOL:
   case TILEDB_INT8:
   case TILEDB_UINT8:
   case TILEDB_INT16:
@@ -119,9 +121,143 @@ bool doubleDeltaCapable(tiledb_datatype_t datatype) {
   case TILEDB_UINT32:
   case TILEDB_INT64:
   case TILEDB_UINT64:
+  case TILEDB_CHAR:
+  case TILEDB_DATETIME_YEAR:
+  case TILEDB_DATETIME_MONTH:
+  case TILEDB_DATETIME_WEEK:
+  case TILEDB_DATETIME_DAY:
+  case TILEDB_DATETIME_HR:
+  case TILEDB_DATETIME_MIN:
+  case TILEDB_DATETIME_SEC:
+  case TILEDB_DATETIME_MS:
+  case TILEDB_DATETIME_US:
+  case TILEDB_DATETIME_NS:
+  case TILEDB_DATETIME_PS:
+  case TILEDB_DATETIME_FS:
+  case TILEDB_DATETIME_AS:
+  case TILEDB_TIME_HR:
+  case TILEDB_TIME_MIN:
+  case TILEDB_TIME_SEC:
+  case TILEDB_TIME_MS:
+  case TILEDB_TIME_US:
+  case TILEDB_TIME_NS:
+  case TILEDB_TIME_PS:
+  case TILEDB_TIME_FS:
+  case TILEDB_TIME_AS:
+  case TILEDB_STRING_ASCII:
+  case TILEDB_STRING_UTF8:
+  case TILEDB_STRING_UTF16:
+  case TILEDB_STRING_UTF32:
+  case TILEDB_STRING_UCS2:
+  case TILEDB_STRING_UCS4:
+  case TILEDB_ANY:
     return true;
   default:
     return false;
+  }
+}
+
+/**
+ * Checks if a given datatype can use the bit width reduction filter
+ * @param datatype
+ * @return
+ */
+bool bitWidthReductionCapable(tiledb_datatype_t datatype) {
+  switch (datatype) {
+  case TILEDB_INT8:
+  case TILEDB_BLOB:
+  case TILEDB_BOOL:
+  case TILEDB_UINT8:
+  case TILEDB_INT16:
+  case TILEDB_UINT16:
+  case TILEDB_INT32:
+  case TILEDB_UINT32:
+  case TILEDB_INT64:
+  case TILEDB_UINT64:
+  case TILEDB_DATETIME_YEAR:
+  case TILEDB_DATETIME_MONTH:
+  case TILEDB_DATETIME_WEEK:
+  case TILEDB_DATETIME_DAY:
+  case TILEDB_DATETIME_HR:
+  case TILEDB_DATETIME_MIN:
+  case TILEDB_DATETIME_SEC:
+  case TILEDB_DATETIME_MS:
+  case TILEDB_DATETIME_US:
+  case TILEDB_DATETIME_NS:
+  case TILEDB_DATETIME_PS:
+  case TILEDB_DATETIME_FS:
+  case TILEDB_DATETIME_AS:
+  case TILEDB_TIME_HR:
+  case TILEDB_TIME_MIN:
+  case TILEDB_TIME_SEC:
+  case TILEDB_TIME_MS:
+  case TILEDB_TIME_US:
+  case TILEDB_TIME_NS:
+  case TILEDB_TIME_PS:
+  case TILEDB_TIME_FS:
+  case TILEDB_TIME_AS:
+    return true;
+  default:
+    return false;
+  }
+}
+
+/**
+ * Checks if a given datatype can use the positive delta filter
+ * @param datatype
+ * @return
+ */
+bool positiveDeltaCapable(tiledb_datatype_t datatype) {
+  switch (datatype) {
+  case TILEDB_INT8:
+  case TILEDB_BLOB:
+  case TILEDB_BOOL:
+  case TILEDB_UINT8:
+  case TILEDB_INT16:
+  case TILEDB_UINT16:
+  case TILEDB_INT32:
+  case TILEDB_UINT32:
+  case TILEDB_INT64:
+  case TILEDB_UINT64:
+  case TILEDB_DATETIME_YEAR:
+  case TILEDB_DATETIME_MONTH:
+  case TILEDB_DATETIME_WEEK:
+  case TILEDB_DATETIME_DAY:
+  case TILEDB_DATETIME_HR:
+  case TILEDB_DATETIME_MIN:
+  case TILEDB_DATETIME_SEC:
+  case TILEDB_DATETIME_MS:
+  case TILEDB_DATETIME_US:
+  case TILEDB_DATETIME_NS:
+  case TILEDB_DATETIME_PS:
+  case TILEDB_DATETIME_FS:
+  case TILEDB_DATETIME_AS:
+  case TILEDB_TIME_HR:
+  case TILEDB_TIME_MIN:
+  case TILEDB_TIME_SEC:
+  case TILEDB_TIME_MS:
+  case TILEDB_TIME_US:
+  case TILEDB_TIME_NS:
+  case TILEDB_TIME_PS:
+  case TILEDB_TIME_FS:
+  case TILEDB_TIME_AS:
+    return true;
+  default:
+    return false;
+  }
+}
+
+bool filterAcceptsDatatype(tiledb_filter_type_t filter,
+                           tiledb_datatype_t datatype) {
+  switch (filter) {
+  case TILEDB_FILTER_DOUBLE_DELTA:
+    return doubleDeltaCapable(datatype);
+  case TILEDB_FILTER_POSITIVE_DELTA:
+    return positiveDeltaCapable(datatype);
+  case TILEDB_FILTER_BIT_WIDTH_REDUCTION:
+    return bitWidthReductionCapable(datatype);
+  default:
+    return true;
   }
 }
 
@@ -237,8 +373,8 @@ void createArray(const Context &ctx, const std::string &array_name,
       tiledb_datatype_t datatype = attribute_types[i];
       tiledb_filter_type_t filter = filters[filterIndex];
 
-      // Not all datatypes can use double delta
-      if (filter == TILEDB_FILTER_DOUBLE_DELTA && !doubleDeltaCapable(datatype))
+      // Check if filter accepts input datatype.
+      if (!filterAcceptsDatatype(filter, datatype))
         continue;
 
       // Create a filter list for the attribute
