@@ -99,6 +99,7 @@ std::vector<tiledb_filter_type_t> filters = {
     TILEDB_FILTER_BITSHUFFLE,
     TILEDB_FILTER_BYTESHUFFLE,
     TILEDB_FILTER_POSITIVE_DELTA,
+    TILEDB_FILTER_DELTA,
 };
 
 std::vector<tiledb_encryption_type_t> encryption_types = {TILEDB_NO_ENCRYPTION,
@@ -247,6 +248,51 @@ bool positiveDeltaCapable(tiledb_datatype_t datatype) {
   }
 }
 
+/**
+ * Checks if a given datatype can use the delta filter
+ * @param datatype
+ * @return
+ */
+bool deltaCapable(tiledb_datatype_t datatype) {
+  switch (datatype) {
+  case TILEDB_INT8:
+  case TILEDB_BLOB:
+  case TILEDB_BOOL:
+  case TILEDB_UINT8:
+  case TILEDB_INT16:
+  case TILEDB_UINT16:
+  case TILEDB_INT32:
+  case TILEDB_UINT32:
+  case TILEDB_INT64:
+  case TILEDB_UINT64:
+  case TILEDB_DATETIME_YEAR:
+  case TILEDB_DATETIME_MONTH:
+  case TILEDB_DATETIME_WEEK:
+  case TILEDB_DATETIME_DAY:
+  case TILEDB_DATETIME_HR:
+  case TILEDB_DATETIME_MIN:
+  case TILEDB_DATETIME_SEC:
+  case TILEDB_DATETIME_MS:
+  case TILEDB_DATETIME_US:
+  case TILEDB_DATETIME_NS:
+  case TILEDB_DATETIME_PS:
+  case TILEDB_DATETIME_FS:
+  case TILEDB_DATETIME_AS:
+  case TILEDB_TIME_HR:
+  case TILEDB_TIME_MIN:
+  case TILEDB_TIME_SEC:
+  case TILEDB_TIME_MS:
+  case TILEDB_TIME_US:
+  case TILEDB_TIME_NS:
+  case TILEDB_TIME_PS:
+  case TILEDB_TIME_FS:
+  case TILEDB_TIME_AS:
+    return true;
+  default:
+    return false;
+  }
+}
+
 bool filterAcceptsDatatype(tiledb_filter_type_t filter,
                            tiledb_datatype_t datatype) {
   switch (filter) {
@@ -256,6 +302,8 @@ bool filterAcceptsDatatype(tiledb_filter_type_t filter,
     return positiveDeltaCapable(datatype);
   case TILEDB_FILTER_BIT_WIDTH_REDUCTION:
     return bitWidthReductionCapable(datatype);
+  case TILEDB_FILTER_DELTA:
+    return deltaCapable(datatype);
   default:
     return true;
   }
@@ -1081,14 +1129,14 @@ bool build_heterogeneous_arrays(
   return true;
 }
 
-void put_metadata(Group& g, const std::string& key, const std::string& value)
-{
-    g.put_metadata(key, TILEDB_STRING_ASCII, static_cast<uint32_t>(value.size()), value.data());
+void put_metadata(Group &g, const std::string &key, const std::string &value) {
+  g.put_metadata(key, TILEDB_STRING_ASCII, static_cast<uint32_t>(value.size()),
+                 value.data());
 }
 
 template <class T>
-void put_metadata(Group &g, const std::string &key,
-                  tiledb_datatype_t datatype, T value) {
+void put_metadata(Group &g, const std::string &key, tiledb_datatype_t datatype,
+                  T value) {
   g.put_metadata(key, datatype, 1, &value);
 
   const uint32_t size = 7;
@@ -1107,7 +1155,7 @@ void build_group(Context &ctx, const std::string &group_base) {
   put_metadata<uint64_t>(g, "u64", TILEDB_UINT64, 0x7777777777777777);
   put_metadata(g, "str", "77777");
 
-  for (const auto& object : ObjectIter(ctx, group_base)) {
+  for (const auto &object : ObjectIter(ctx, group_base)) {
     if (object.type() != Object::Type::Array) {
       continue;
     }
@@ -1154,11 +1202,11 @@ int main() {
     }
     Context ctx(cfg);
     for (auto array_type : array_types) {
-      if (!build_homogeneous_arrays(ctx, array_base, version,
-                                    array_type, encryption_type))
+      if (!build_homogeneous_arrays(ctx, array_base, version, array_type,
+                                    encryption_type))
         return 1;
-      if (!build_heterogeneous_arrays(ctx, array_base, version,
-                                      array_type, encryption_type))
+      if (!build_heterogeneous_arrays(ctx, array_base, version, array_type,
+                                      encryption_type))
         return 1;
     }
   }
