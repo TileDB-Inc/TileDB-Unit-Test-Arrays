@@ -5,7 +5,7 @@
  *
  * The MIT License
  *
- * @copyright Copyright (c) 2017-2018 TileDB, Inc.
+ * @copyright Copyright (c) 2017-2024 TileDB, Inc.
  * @copyright Copyright (c) 2016 MIT and Intel Corporation
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -28,8 +28,7 @@
  *
  * @section DESCRIPTION
  *
- * This creates test arrays for backwards compatibility.
- *
+ * Generate test arrays for backwards compatibility.
  */
 
 #include <tiledb/tiledb>
@@ -63,8 +62,8 @@ std::vector<tiledb_datatype_t> dimension_sparse_datatypes = {
     TILEDB_DATETIME_MS,    TILEDB_DATETIME_US,   TILEDB_DATETIME_NS,
     TILEDB_DATETIME_PS,    TILEDB_DATETIME_FS,   TILEDB_DATETIME_AS};
 
-// Heterogeneous dimensions. A sparse array will be created for
-// each 2-element combination.
+// Heterogeneous dimensions. 
+// A sparse array will be created for each 2-element combination.
 std::vector<tiledb_datatype_t> heterogeneous_dimension_datatypes = {
     TILEDB_INT8,         TILEDB_UINT16,      TILEDB_INT32,      TILEDB_UINT64,
     TILEDB_STRING_ASCII, TILEDB_DATETIME_US, TILEDB_DATETIME_NS};
@@ -81,10 +80,10 @@ std::vector<tiledb_datatype_t> attribute_types = {
     TILEDB_DATETIME_HR,    TILEDB_DATETIME_MIN,  TILEDB_DATETIME_SEC,
     TILEDB_DATETIME_MS,    TILEDB_DATETIME_US,   TILEDB_DATETIME_NS,
     TILEDB_DATETIME_PS,    TILEDB_DATETIME_FS,   TILEDB_DATETIME_AS,
-    TILEDB_BLOB,           TILEDB_TIME_HR,       TILEDB_TIME_MIN,
-    TILEDB_TIME_SEC,       TILEDB_TIME_MS,       TILEDB_TIME_US,
-    TILEDB_TIME_NS,        TILEDB_TIME_PS,       TILEDB_TIME_FS,
-    TILEDB_TIME_AS};
+    TILEDB_BLOB,           TILEDB_GEOM_WKB,      TILEDB_GEOM_WKT,
+    TILEDB_TIME_HR,        TILEDB_TIME_MIN,      TILEDB_TIME_SEC,
+    TILEDB_TIME_MS,        TILEDB_TIME_US,       TILEDB_TIME_NS,
+    TILEDB_TIME_PS,        TILEDB_TIME_FS,       TILEDB_TIME_AS};
 
 // Filters to test
 std::vector<tiledb_filter_type_t> filters = {
@@ -113,6 +112,8 @@ std::vector<tiledb_encryption_type_t> encryption_types = {TILEDB_NO_ENCRYPTION,
 bool doubleDeltaCapable(tiledb_datatype_t datatype) {
   switch (datatype) {
   case TILEDB_BLOB:
+  case TILEDB_GEOM_WKB:
+  case TILEDB_GEOM_WKT:
   case TILEDB_BOOL:
   case TILEDB_INT8:
   case TILEDB_UINT8:
@@ -167,6 +168,8 @@ bool bitWidthReductionCapable(tiledb_datatype_t datatype) {
   switch (datatype) {
   case TILEDB_INT8:
   case TILEDB_BLOB:
+  case TILEDB_GEOM_WKB:
+  case TILEDB_GEOM_WKT:
   case TILEDB_BOOL:
   case TILEDB_UINT8:
   case TILEDB_INT16:
@@ -212,6 +215,8 @@ bool positiveDeltaCapable(tiledb_datatype_t datatype) {
   switch (datatype) {
   case TILEDB_INT8:
   case TILEDB_BLOB:
+  case TILEDB_GEOM_WKB:
+  case TILEDB_GEOM_WKT:
   case TILEDB_BOOL:
   case TILEDB_UINT8:
   case TILEDB_INT16:
@@ -257,6 +262,8 @@ bool deltaCapable(tiledb_datatype_t datatype) {
   switch (datatype) {
   case TILEDB_INT8:
   case TILEDB_BLOB:
+  case TILEDB_GEOM_WKB:
+  case TILEDB_GEOM_WKT:
   case TILEDB_BOOL:
   case TILEDB_UINT8:
   case TILEDB_INT16:
@@ -901,7 +908,9 @@ addDataToQuery(Query *query, std::string attributeName,
                               std::move(offsets), std::move(values),
                               std::move(validity));
   }
-  case TILEDB_BLOB: {
+  case TILEDB_BLOB:
+  case TILEDB_GEOM_WKB:
+  case TILEDB_GEOM_WKT: {
     std::shared_ptr<std::vector<std::byte>> values =
         std::make_shared<std::vector<std::byte>>();
     values->push_back(std::byte(1));
