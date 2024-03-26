@@ -918,6 +918,7 @@ addDataToQuery(Query *query, std::string attributeName,
                               std::move(offsets), std::move(values),
                               std::move(validity));
   }
+  case TILEDB_BOOL:
   case TILEDB_UINT8: {
     std::shared_ptr<std::vector<uint8_t>> values =
         std::make_shared<std::vector<uint8_t>>();
