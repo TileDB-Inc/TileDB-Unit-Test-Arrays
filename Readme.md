@@ -24,12 +24,11 @@ In the arrays folder will be a sub folder with the tiledb version. This can be c
 and it will be used by TileDB for unit testing.
 
 ## Reviewers
-Adding a review for a PR here it's not trivial, opening a PR in the browser doesn't work (usually a PR will add a new array and it's 5k+ files),
-cloning takes forever, we also don't have an older branch which has less data in it so you can clone that directly, here's one way to do add a review:
+Reviewing PRs in this repository is not always trivial. Many PRs add 5k+ files which cannot be opened in the browser, and the repository itself takes a long time to clone. Additionally, there is no alternative, older branch with less data to be cloned. To overcome these hurdles, here is one suggested way to add a review:
 - Install GitHub commandline tools (on macOs it's a simple `brew install gh`)
 - Login to your account by running `gh auth login`
 - In order to submit a review, you need to be in a git repository, and you need to have one of the remotes pointing to this repo, here's how to do it without cloning this repo:
 - Go in any git repo you have locally, run `git remote add testarrays git@github.com:TileDB-Inc/TileDB-Unit-Test-Arrays.git`. This is needed because the next command requires you at least have a remote pointing to the default repository you set.
 - Run `gh repo set-default git@github.com:TileDB-Inc/TileDB-Unit-Test-Arrays.git`.
-- Now you can submit your review with: `gh pr review --approve 62`
+- Now you can submit your review with: `gh pr review --approve <PR #>`
 
